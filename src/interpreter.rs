@@ -1,5 +1,6 @@
-use crate::lexer::tokenize_line;
+use crate::lexer::{Keyword, Token, tokenize_line};
 use crate::parser::{parse_function, parse_line};
+use crate::types::Identifier;
 use crate::{
     app_error::AppError,
     types::{Expr, Statement, Value},
@@ -7,8 +8,8 @@ use crate::{
 use std::collections::HashMap;
 
 pub struct Interpreter {
-    variables: Vec<HashMap<String, Value>>,
-    functions: HashMap<String, (Vec<String>, Vec<Statement>)>,
+    variables: Vec<HashMap<Identifier, Value>>,
+    functions: HashMap<Identifier, (Vec<Identifier>, Vec<Statement>)>,
 }
 
 impl Interpreter {
@@ -19,11 +20,11 @@ impl Interpreter {
         }
     }
 
-    fn current_scope_mut(&mut self) -> &mut HashMap<String, Value> {
+    fn current_scope_mut(&mut self) -> &mut HashMap<Identifier, Value> {
         self.variables.last_mut().unwrap()
     }
 
-    fn current_scope(&self) -> &HashMap<String, Value> {
+    fn current_scope(&self) -> &HashMap<Identifier, Value> {
         self.variables.last().unwrap()
     }
 
@@ -32,10 +33,16 @@ impl Interpreter {
         let mut statements = Vec::new();
 
         while let Some(line) = lines.next() {
-            let tokens = tokenize_line(line);
+            let tokens = tokenize_line(line)?;
 
             match tokens.as_slice() {
-                t if t.len() >= 3 && t[0] == "HOW" && t[1] == "IZ" && t[2] == "I" => {
+                [
+                    Token::Keyword(Keyword::How),
+                    Token::Keyword(Keyword::Iz),
+                    Token::Keyword(Keyword::I),
+                    Token::Identifier(_),
+                    ..,
+                ] => {
                     let func = parse_function(&tokens, &mut lines)?;
                     statements.push(func);
                 }

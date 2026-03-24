@@ -8,7 +8,7 @@ use interpreter::Interpreter;
 use std::fs;
 
 fn main() {
-    let source = fs::read_to_string("../program.lol").expect("Failed to read file");
+    let source = fs::read_to_string("program.lol").expect("Failed to read file");
 
     let mut interpreter = Interpreter::new();
     match interpreter.execute_source(source) {
