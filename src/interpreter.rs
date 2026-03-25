@@ -20,12 +20,12 @@ impl Interpreter {
         }
     }
 
-    fn current_scope_mut(&mut self) -> &mut HashMap<Identifier, Value> {
-        self.variables.last_mut().unwrap()
+    fn current_scope_mut(&mut self) -> Option<&mut HashMap<Identifier, Value>> {
+        self.variables.last_mut()
     }
 
-    fn current_scope(&self) -> &HashMap<Identifier, Value> {
-        self.variables.last().unwrap()
+    fn current_scope(&self) -> Option<&HashMap<Identifier, Value>> {
+        self.variables.last()
     }
 
     pub fn execute_source(&mut self, source: String) -> Result<(), AppError> {
@@ -88,12 +88,15 @@ impl Interpreter {
                 }
             }
             Statement::Visible(expr) => {
-                let value = self.eval_expr(&expr);
+                let value = self.eval_expr(&expr)?;
                 println!("{}", self.value_to_string(&value));
             }
             Statement::IHasA(name, expr) => {
-                let value = self.eval_expr(&expr);
-                self.current_scope_mut().insert(name.clone(), value);
+                let value = self.eval_expr(&expr)?;
+                
+                let curr_scope = self.current_scope_mut()
+                    .ok_or_else(|| AppError::CouldNotGetCurrentVariableScope)?;
+                curr_scope.insert(name.clone(), value);
             }
             Statement::KThxBye => {
                 // println!("KTHXBYE")
@@ -111,7 +114,7 @@ impl Interpreter {
                 let arg_values: Vec<Value> = param_values
                     .iter()
                     .map(|expr| self.eval_expr(expr))
-                    .collect();
+                    .collect::<Result<Vec<_>, _>>()?;
 
                 let mut new_scope = HashMap::new();
 
@@ -135,18 +138,22 @@ impl Interpreter {
         Ok(())
     }
 
-    fn eval_expr(&self, expr: &Expr) -> Value {
+    fn eval_expr(&self, expr: &Expr) -> Result<Value, AppError> {
         match expr {
-            Expr::Numbar(n) => Value::Numbar(*n),
-            Expr::Numbr(n) => Value::Numbr(*n),
-            Expr::Yarn(s) => Value::Yarn(s.clone()),
-            Expr::Troof(b) => Value::Troof(*b),
-            Expr::Variable(name) => self
-                .current_scope()
+            Expr::Numbar(n) => Ok(Value::Numbar(*n)),
+            Expr::Numbr(n) => Ok(Value::Numbr(*n)),
+            Expr::Yarn(s) => Ok(Value::Yarn(s.clone())),
+            Expr::Troof(b) => Ok(Value::Troof(*b)),
+            Expr::Variable(name) => {
+                let curr_scope = self.current_scope()
+                    .ok_or_else(|| AppError::CouldNotGetCurrentVariableScope)?;
+                
+                Ok(curr_scope
                 .get(name)
                 .cloned()
-                .unwrap_or(Value::Noob),
-            Expr::Noob => Value::Noob,
+                .unwrap_or(Value::Noob))
+            }
+            Expr::Noob => Ok(Value::Noob),
         }
     }
 

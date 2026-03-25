@@ -12,6 +12,7 @@ pub enum AppError {
     TokenCannotBeExpression,
     MissingExpression,
     UnexpectedTokensInExpression,
+    CouldNotGetCurrentVariableScope
 }
 
 impl fmt::Display for AppError {
@@ -35,6 +36,9 @@ impl fmt::Display for AppError {
             }
             AppError::UnexpectedTokensInExpression => {
                 write!(f, "Unexpected tokens in expression")
+            }
+            AppError::CouldNotGetCurrentVariableScope => {
+                write!(f, "Could not get current variable scope")
             }
         }
     }
