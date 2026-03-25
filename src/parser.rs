@@ -18,7 +18,7 @@ pub fn parse_line(tokens: &[Token]) -> Result<Option<Statement>, AppError> {
         }
 
         [Token::Keyword(Keyword::Visible), rest @ ..] => {
-            let expr = parse_expr(rest)?;
+            let expr = rest.try_into()?;
             Ok(Some(Statement::Visible(expr)))
         }
 
@@ -37,7 +37,7 @@ pub fn parse_line(tokens: &[Token]) -> Result<Option<Statement>, AppError> {
             Token::Keyword(Keyword::Itz),
             rest @ ..,
         ] => {
-            let expr = parse_expr(rest)?;
+            let expr = rest.try_into()?;
             Ok(Some(Statement::IHasA(variable_name.clone(), expr)))
         }
 
@@ -177,35 +177,3 @@ pub fn parse_function(
 
     Ok(Statement::HowIzI(func_name.clone(), params, body))
 }
-
-fn parse_expr(tokens: &[Token]) -> Result<Expr, AppError> {
-    match tokens {
-        [single] => Expr::try_from(single),
-
-        [] => Err(AppError::MissingExpression),
-
-        _ => Err(AppError::UnexpectedTokensInExpression),
-    }
-}
-
-// pub fn parse_expr(tokens: &[String]) -> Expr {
-//     if tokens.is_empty() {
-//         return Expr::Noob;
-//     }
-
-//     let token = &tokens[0];
-
-//     if token.starts_with('"') && token.ends_with('"') {
-//         Expr::Yarn(token.trim_matches('"').to_string())
-//     } else if let Ok(num) = token.parse::<f64>() {
-//         Expr::Numbar(num)
-//     } else if let Ok(num) = token.parse::<i32>() {
-//         Expr::Numbr(num)
-//     } else if token == "WIN" {
-//         Expr::Troof(true)
-//     } else if token == "FAIL" {
-//         Expr::Troof(false)
-//     } else {
-//         Expr::Variable(token.clone())
-//     }
-// }
