@@ -12,7 +12,7 @@ pub enum AppError {
     TokenCannotBeExpression,
     MissingExpression,
     UnexpectedTokensInExpression,
-    CouldNotGetCurrentVariableScope
+    CouldNotGetCurrentVariableScope,
 }
 
 impl fmt::Display for AppError {

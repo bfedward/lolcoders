@@ -48,9 +48,9 @@ impl TryFrom<&[Token]> for Expr {
     fn try_from(tokens: &[Token]) -> Result<Self, Self::Error> {
         match tokens {
             [single] => Expr::try_from(single),
-    
+
             [] => Err(AppError::MissingExpression),
-    
+
             _ => Err(AppError::UnexpectedTokensInExpression),
         }
     }

@@ -5,7 +5,10 @@ use crate::{
 };
 use std::iter::Peekable;
 
-pub fn parse_line(tokens: &[Token]) -> Result<Option<Statement>, AppError> {
+pub fn parse_line(
+    tokens: &[Token],
+    lines: &mut Peekable<std::str::Lines>,
+) -> Result<Option<Statement>, AppError> {
     if tokens.is_empty() {
         return Ok(None);
     }
@@ -39,6 +42,17 @@ pub fn parse_line(tokens: &[Token]) -> Result<Option<Statement>, AppError> {
         ] => {
             let expr = rest.try_into()?;
             Ok(Some(Statement::IHasA(variable_name.clone(), expr)))
+        }
+
+        [
+            Token::Keyword(Keyword::How),
+            Token::Keyword(Keyword::Iz),
+            Token::Keyword(Keyword::I),
+            Token::Identifier(_),
+            ..,
+        ] => {
+            let func = parse_function(&tokens, lines)?;
+            Ok(Some(func))
         }
 
         [
@@ -148,7 +162,7 @@ pub fn parse_function(
 
     let mut body = Vec::new();
 
-    let mut found_end = false;
+    let mut if_u_say_so = false;
 
     while let Some(line) = lines.next() {
         let tokens = tokenize_line(line)?;
@@ -162,16 +176,16 @@ pub fn parse_function(
                 Token::Keyword(Keyword::So)
             ]
         ) {
-            found_end = true;
+            if_u_say_so = true;
             break;
         }
 
-        if let Some(stmt) = parse_line(&tokens)? {
+        if let Some(stmt) = parse_line(&tokens, lines)? {
             body.push(stmt);
         }
     }
 
-    if !found_end {
+    if !if_u_say_so {
         return Err(AppError::ParseError);
     }
 

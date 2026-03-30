@@ -1,5 +1,5 @@
-use crate::lexer::{Keyword, Token, tokenize_line};
-use crate::parser::{parse_function, parse_line};
+use crate::lexer::tokenize_line;
+use crate::parser::parse_line;
 use crate::types::Identifier;
 use crate::{
     app_error::AppError,
@@ -35,23 +35,8 @@ impl Interpreter {
         while let Some(line) = lines.next() {
             let tokens = tokenize_line(line)?;
 
-            match tokens.as_slice() {
-                [
-                    Token::Keyword(Keyword::How),
-                    Token::Keyword(Keyword::Iz),
-                    Token::Keyword(Keyword::I),
-                    Token::Identifier(_),
-                    ..,
-                ] => {
-                    let func = parse_function(&tokens, &mut lines)?;
-                    statements.push(func);
-                }
-
-                _ => {
-                    if let Some(stmt) = parse_line(&tokens)? {
-                        statements.push(stmt);
-                    }
-                }
+            if let Some(stmt) = parse_line(&tokens, &mut lines)? {
+                statements.push(stmt);
             }
         }
 
@@ -93,8 +78,9 @@ impl Interpreter {
             }
             Statement::IHasA(name, expr) => {
                 let value = self.eval_expr(&expr)?;
-                
-                let curr_scope = self.current_scope_mut()
+
+                let curr_scope = self
+                    .current_scope_mut()
                     .ok_or_else(|| AppError::CouldNotGetCurrentVariableScope)?;
                 curr_scope.insert(name.clone(), value);
             }
@@ -145,13 +131,11 @@ impl Interpreter {
             Expr::Yarn(s) => Ok(Value::Yarn(s.clone())),
             Expr::Troof(b) => Ok(Value::Troof(*b)),
             Expr::Variable(name) => {
-                let curr_scope = self.current_scope()
+                let curr_scope = self
+                    .current_scope()
                     .ok_or_else(|| AppError::CouldNotGetCurrentVariableScope)?;
-                
-                Ok(curr_scope
-                .get(name)
-                .cloned()
-                .unwrap_or(Value::Noob))
+
+                Ok(curr_scope.get(name).cloned().unwrap_or(Value::Noob))
             }
             Expr::Noob => Ok(Value::Noob),
         }
