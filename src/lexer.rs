@@ -23,6 +23,9 @@ pub enum Keyword {
     Numbr,
     Numbar,
     Noob,
+    Found,
+    Gtfo,
+    R,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -129,6 +132,9 @@ fn match_keyword(word: &str) -> Option<Keyword> {
         "NUMBR" => Some(Keyword::Numbr),
         "NUMBAR" => Some(Keyword::Numbar),
         "NOOB" => Some(Keyword::Noob),
+        "FOUND" => Some(Keyword::Found),
+        "GTFO" => Some(Keyword::Gtfo),
+        "R" => Some(Keyword::R),
         _ => None,
     }
 }

@@ -199,17 +199,26 @@ pub fn parse_function(
     while let Some(line) = lines.next() {
         let tokens = tokenize_line(line)?;
 
-        if matches!(
-            tokens.as_slice(),
+        match tokens.as_slice() {
             [
                 Token::Keyword(Keyword::If),
                 Token::Keyword(Keyword::U),
                 Token::Keyword(Keyword::Say),
-                Token::Keyword(Keyword::So)
-            ]
-        ) {
-            if_u_say_so = true;
-            break;
+                Token::Keyword(Keyword::So),
+            ] => {
+                if_u_say_so = true;
+                break;
+            }
+            [
+                Token::Keyword(Keyword::Found),
+                Token::Keyword(Keyword::Yr),
+                rest @ ..,
+            ] => {
+                let expr: Expr = rest.try_into()?;
+                body.push(Statement::FoundYr(expr))
+            }
+            [Token::Keyword(Keyword::Gtfo)] => body.push(Statement::Gtfo),
+            _ => (),
         }
 
         if let Some(stmt) = parse_line(&tokens, lines)? {

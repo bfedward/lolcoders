@@ -13,6 +13,7 @@ pub enum AppError {
     MissingExpression,
     UnexpectedTokensInExpression,
     CouldNotGetCurrentVariableScope,
+    CannotReturnFromFunctionOutsideFunction,
 }
 
 impl fmt::Display for AppError {
@@ -39,6 +40,9 @@ impl fmt::Display for AppError {
             }
             AppError::CouldNotGetCurrentVariableScope => {
                 write!(f, "Could not get current variable scope")
+            }
+            AppError::CannotReturnFromFunctionOutsideFunction => {
+                write!(f, "Cannot return from function outside of a function")
             }
         }
     }

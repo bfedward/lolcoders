@@ -1,4 +1,4 @@
-use std::fmt::{Display};
+use std::fmt::Display;
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Numbar {
@@ -47,7 +47,7 @@ impl Yarn {
 
 impl Display for Yarn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value) 
+        write!(f, "{}", self.value)
     }
 }
 
@@ -66,7 +66,7 @@ impl Display for Troof {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.value {
             true => write!(f, "WIN"),
-            false => write!(f, "FAIL")
+            false => write!(f, "FAIL"),
         }
     }
 }

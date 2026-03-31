@@ -9,6 +9,7 @@ use crate::{
 use std::collections::HashMap;
 
 pub struct Interpreter {
+    // it_variable: Option<Value>,
     variables: Vec<HashMap<Identifier, Value>>,
     functions: HashMap<Identifier, (Vec<Identifier>, Vec<Statement>)>,
 }
@@ -16,6 +17,7 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         Self {
+            // it_variable: None,
             variables: vec![HashMap::new()],
             functions: HashMap::new(),
         }
@@ -116,10 +118,23 @@ impl Interpreter {
                 self.variables.push(new_scope);
 
                 for stmt in &func_statements {
-                    self.execute_statement(stmt)?;
+                    match stmt {
+                        Statement::Gtfo => {
+                            self.variables.pop();
+                            return Ok(());
+                        }
+                        Statement::FoundYr(_) => {
+                            self.variables.pop();
+                            return Ok(());
+                        }
+                        _ => self.execute_statement(stmt)?,
+                    }
                 }
 
                 self.variables.pop();
+            }
+            Statement::FoundYr(_) | Statement::Gtfo => {
+                return Err(AppError::CannotReturnFromFunctionOutsideFunction);
             }
         }
         Ok(())
