@@ -1,7 +1,10 @@
 use crate::{
     app_error::AppError,
     lexer::{Keyword, Token, tokenize_line},
-    types::{Expr, Statement},
+    types::{
+        Expr, Statement,
+        primitive::{Numbar, Numbr, Troof, Yarn},
+    },
 };
 use std::iter::Peekable;
 
@@ -38,6 +41,35 @@ pub fn parse_line(
             Token::Keyword(Keyword::A),
             Token::Identifier(variable_name),
             Token::Keyword(Keyword::Itz),
+            Token::Keyword(Keyword::A),
+            Token::Keyword(var_type),
+        ] => match var_type {
+            Keyword::Yarn => Ok(Some(Statement::IHasA(
+                variable_name.clone(),
+                Expr::Yarn(Yarn::default()),
+            ))),
+            Keyword::Troof => Ok(Some(Statement::IHasA(
+                variable_name.clone(),
+                Expr::Troof(Troof::default()),
+            ))),
+            Keyword::Numbar => Ok(Some(Statement::IHasA(
+                variable_name.clone(),
+                Expr::Numbar(Numbar::default()),
+            ))),
+            Keyword::Numbr => Ok(Some(Statement::IHasA(
+                variable_name.clone(),
+                Expr::Numbr(Numbr::default()),
+            ))),
+            Keyword::Noob => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
+            _ => Err(AppError::ParseError),
+        },
+
+        [
+            Token::Keyword(Keyword::I),
+            Token::Keyword(Keyword::Has),
+            Token::Keyword(Keyword::A),
+            Token::Identifier(variable_name),
+            Token::Keyword(Keyword::Itz),
             rest @ ..,
         ] => {
             let expr = rest.try_into()?;
@@ -51,7 +83,7 @@ pub fn parse_line(
             Token::Identifier(_),
             ..,
         ] => {
-            let func = parse_function(&tokens, lines)?;
+            let func = parse_function(tokens, lines)?;
             Ok(Some(func))
         }
 

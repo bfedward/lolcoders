@@ -1,6 +1,6 @@
 use std::fmt::{self};
 
-use crate::types::Identifier;
+use crate::types::identifier::Identifier;
 
 pub enum AppError {
     HaiMustBeFirstLine,

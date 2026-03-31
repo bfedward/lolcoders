@@ -1,4 +1,4 @@
-use crate::{app_error::AppError, types::Identifier};
+use crate::{app_error::AppError, types::identifier::Identifier};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Keyword {
@@ -19,6 +19,10 @@ pub enum Keyword {
     An,
     Mkay,
     Troof,
+    Yarn,
+    Numbr,
+    Numbar,
+    Noob,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -37,7 +41,7 @@ pub fn tokenize_line(line: &str) -> Result<Vec<Token>, AppError> {
 
     let tokens = raw_tokens
         .into_iter()
-        .map(|word| classify_token(word))
+        .map(classify_token)
         .collect::<Result<Vec<Token>, AppError>>()?;
 
     Ok(tokens)
@@ -121,6 +125,10 @@ fn match_keyword(word: &str) -> Option<Keyword> {
         "AN" => Some(Keyword::An),
         "MKAY" => Some(Keyword::Mkay),
         "TROOF" => Some(Keyword::Troof),
+        "YARN" => Some(Keyword::Yarn),
+        "NUMBR" => Some(Keyword::Numbr),
+        "NUMBAR" => Some(Keyword::Numbar),
+        "NOOB" => Some(Keyword::Noob),
         _ => None,
     }
 }

@@ -1,6 +1,7 @@
 use crate::lexer::tokenize_line;
 use crate::parser::parse_line;
-use crate::types::Identifier;
+
+use crate::types::identifier::Identifier;
 use crate::{
     app_error::AppError,
     types::{Expr, Statement, Value},
@@ -73,15 +74,15 @@ impl Interpreter {
                 }
             }
             Statement::Visible(expr) => {
-                let value = self.eval_expr(&expr)?;
+                let value = self.eval_expr(expr)?;
                 println!("{}", self.value_to_string(&value));
             }
             Statement::IHasA(name, expr) => {
-                let value = self.eval_expr(&expr)?;
+                let value = self.eval_expr(expr)?;
 
                 let curr_scope = self
                     .current_scope_mut()
-                    .ok_or_else(|| AppError::CouldNotGetCurrentVariableScope)?;
+                    .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
                 curr_scope.insert(name.clone(), value);
             }
             Statement::KThxBye => {
@@ -126,14 +127,14 @@ impl Interpreter {
 
     fn eval_expr(&self, expr: &Expr) -> Result<Value, AppError> {
         match expr {
-            Expr::Numbar(n) => Ok(Value::Numbar(*n)),
-            Expr::Numbr(n) => Ok(Value::Numbr(*n)),
+            Expr::Numbar(n) => Ok(Value::Numbar(n.clone())),
+            Expr::Numbr(n) => Ok(Value::Numbr(n.clone())),
             Expr::Yarn(s) => Ok(Value::Yarn(s.clone())),
-            Expr::Troof(b) => Ok(Value::Troof(*b)),
+            Expr::Troof(b) => Ok(Value::Troof(b.clone())),
             Expr::Variable(name) => {
                 let curr_scope = self
                     .current_scope()
-                    .ok_or_else(|| AppError::CouldNotGetCurrentVariableScope)?;
+                    .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
                 Ok(curr_scope.get(name).cloned().unwrap_or(Value::Noob))
             }
@@ -145,14 +146,8 @@ impl Interpreter {
         match value {
             Value::Numbar(n) => n.to_string(),
             Value::Numbr(n) => n.to_string(),
-            Value::Yarn(s) => s.clone(),
-            Value::Troof(b) => {
-                if *b {
-                    "WIN".into()
-                } else {
-                    "FAIL".into()
-                }
-            }
+            Value::Yarn(s) => s.to_string(),
+            Value::Troof(b) => b.to_string(),
             Value::Noob => "NOOB".into(),
         }
     }
