@@ -91,6 +91,7 @@ pub fn parse_line(
             Token::Keyword(Keyword::I),
             Token::Keyword(Keyword::Iz),
             Token::Identifier(called_func),
+            Token::Keyword(Keyword::Mkay),
         ] => Ok(Some(Statement::IIz(called_func.clone(), Vec::new()))),
 
         [
@@ -128,8 +129,26 @@ pub fn parse_line(
                 }
             }
 
+            match rest.last() {
+                Some(Token::Keyword(Keyword::Mkay)) => (),
+                _ => return Err(AppError::ParseError),
+            }
+
             Ok(Some(Statement::IIz(called_func.clone(), args)))
         }
+
+        [
+            Token::Identifier(var_name),
+            Token::Keyword(Keyword::R),
+            Token::Keyword(Keyword::I),
+            Token::Keyword(Keyword::Iz),
+            Token::Identifier(called_func),
+            Token::Keyword(Keyword::Mkay),
+        ] => Ok(Some(Statement::VarRIIzFunc(
+            var_name.clone(),
+            called_func.clone(),
+            Vec::new(),
+        ))),
 
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
@@ -218,11 +237,11 @@ pub fn parse_function(
                 body.push(Statement::FoundYr(expr))
             }
             [Token::Keyword(Keyword::Gtfo)] => body.push(Statement::Gtfo),
-            _ => (),
-        }
-
-        if let Some(stmt) = parse_line(&tokens, lines)? {
-            body.push(stmt);
+            _ => {
+                if let Some(stmt) = parse_line(&tokens, lines)? {
+                    body.push(stmt);
+                }
+            }
         }
     }
 

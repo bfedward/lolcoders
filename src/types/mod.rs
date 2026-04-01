@@ -66,6 +66,7 @@ pub enum Statement {
     IHasA(Identifier, Expr),
     HowIzI(Identifier, Vec<Identifier>, Vec<Statement>),
     IIz(Identifier, Vec<Expr>),
+    VarRIIzFunc(Identifier, Identifier, Vec<Expr>),
     FoundYr(Expr),
     Gtfo,
     KThxBye,

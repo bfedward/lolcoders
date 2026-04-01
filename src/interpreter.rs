@@ -79,13 +79,13 @@ impl Interpreter {
                 let value = self.eval_expr(expr)?;
                 println!("{}", self.value_to_string(&value));
             }
-            Statement::IHasA(name, expr) => {
+            Statement::IHasA(var_name, expr) => {
                 let value = self.eval_expr(expr)?;
 
                 let curr_scope = self
                     .current_scope_mut()
                     .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
-                curr_scope.insert(name.clone(), value);
+                curr_scope.insert(var_name.clone(), value);
             }
             Statement::KThxBye => {
                 // println!("KTHXBYE")
@@ -93,12 +93,12 @@ impl Interpreter {
             Statement::HowIzI(_, _, _) => {
                 // functions are already registered.
             }
-            Statement::IIz(name, param_values) => {
+            Statement::IIz(func_name, param_values) => {
                 let (func_params, func_statements) = self
                     .functions
-                    .get(name)
+                    .get(func_name)
                     .cloned()
-                    .ok_or_else(|| AppError::FunctionDoesNotExist(name.clone()))?;
+                    .ok_or_else(|| AppError::FunctionDoesNotExist(func_name.clone()))?;
 
                 let arg_values: Vec<Value> = param_values
                     .iter()
@@ -135,6 +135,72 @@ impl Interpreter {
             }
             Statement::FoundYr(_) | Statement::Gtfo => {
                 return Err(AppError::CannotReturnFromFunctionOutsideFunction);
+            }
+            Statement::VarRIIzFunc(var_name, func_name, param_values) => {
+                let (func_params, func_statements) = self
+                    .functions
+                    .get(func_name)
+                    .cloned()
+                    .ok_or_else(|| AppError::FunctionDoesNotExist(func_name.clone()))?;
+
+                let arg_values: Vec<Value> = param_values
+                    .iter()
+                    .map(|expr| self.eval_expr(expr))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                let mut new_scope = HashMap::new();
+
+                if func_params.len() != arg_values.len() {
+                    return Err(AppError::NotEnoughArgsForFunction);
+                }
+
+                for (param, value) in func_params.into_iter().zip(arg_values) {
+                    new_scope.insert(param, value);
+                }
+
+                self.variables.push(new_scope);
+
+                for stmt in &func_statements {
+                    match stmt {
+                        Statement::Gtfo => {
+                            self.variables.pop();
+
+                            let curr_scope_mut = self
+                                .current_scope_mut()
+                                .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                            let _ = curr_scope_mut
+                                .get(var_name)
+                                .ok_or(AppError::VariableDoesNotExist(var_name.clone()))?;
+
+                            curr_scope_mut
+                                .entry(var_name.clone())
+                                .and_modify(|e| *e = Value::Noob);
+
+                            return Ok(());
+                        }
+                        Statement::FoundYr(expr) => {
+                            self.variables.pop();
+
+                            let val = self.eval_expr(expr)?;
+
+                            let curr_scope = self
+                                .current_scope_mut()
+                                .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                            let _ = curr_scope
+                                .get(var_name)
+                                .ok_or(AppError::VariableDoesNotExist(var_name.clone()))?;
+
+                            curr_scope.entry(var_name.clone()).and_modify(|e| *e = val);
+
+                            return Ok(());
+                        }
+                        _ => self.execute_statement(stmt)?,
+                    }
+                }
+
+                self.variables.pop();
             }
         }
         Ok(())

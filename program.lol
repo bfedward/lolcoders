@@ -7,11 +7,20 @@ VISIBLE VAR
 VISIBLE "hello world"
 VISIBLE 42
 
-I IZ func
+I IZ func MKAY
 
 HOW IZ I func
     VISIBLE "inside function!"
     VISIBLE 43
 IF U SAY SO
+
+HOW IZ I returns_five
+    FOUND YR 5
+IF U SAY SO
+
+I HAS A five ITZ A NUMBR
+five R I IZ returns_five MKAY
+
+VISIBLE five
 
 KTHXBYE

@@ -6,6 +6,7 @@ pub enum AppError {
     HaiMustBeFirstLine,
     KThxByeMustBeLastLine,
     ParseError,
+    VariableDoesNotExist(Identifier),
     FunctionDoesNotExist(Identifier),
     NotEnoughArgsForFunction,
     InvalidIdentifier(String),
@@ -22,6 +23,9 @@ impl fmt::Display for AppError {
             AppError::HaiMustBeFirstLine => write!(f, "Must start with HAI"),
             AppError::ParseError => write!(f, "Parse error!"),
             AppError::KThxByeMustBeLastLine => write!(f, "Must end with KTHXBYE"),
+            AppError::VariableDoesNotExist(var) => {
+                write!(f, "Variable {var} does not exist in current scope")
+            }
             AppError::FunctionDoesNotExist(func) => write!(f, "Function {func} does not exist"),
             AppError::NotEnoughArgsForFunction => {
                 write!(f, "Not enough arguments to call function")
