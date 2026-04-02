@@ -1,11 +1,10 @@
 use std::fmt::{self};
 
-use crate::types::identifier::Identifier;
+use crate::{lexer::Tokens, types::identifier::Identifier};
 
 pub enum AppError {
     HaiMustBeFirstLine,
     KThxByeMustBeLastLine,
-    ParseError,
     VariableDoesNotExist(Identifier),
     FunctionDoesNotExist(Identifier),
     NotEnoughArgsForFunction,
@@ -15,13 +14,18 @@ pub enum AppError {
     UnexpectedTokensInExpression,
     CouldNotGetCurrentVariableScope,
     CannotReturnFromFunctionOutsideFunction,
+    FunctionMustEndIfUSaySo,
+    UnknownVariableType,
+    IncorrectFunctionArguments(Identifier),
+    LineParseError(Tokens),
+    FunctionArgumentsMustEndWithMkay,
+    FunctionParseError,
 }
 
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AppError::HaiMustBeFirstLine => write!(f, "Must start with HAI"),
-            AppError::ParseError => write!(f, "Parse error!"),
             AppError::KThxByeMustBeLastLine => write!(f, "Must end with KTHXBYE"),
             AppError::VariableDoesNotExist(var) => {
                 write!(f, "Variable {var} does not exist in current scope")
@@ -47,6 +51,24 @@ impl fmt::Display for AppError {
             }
             AppError::CannotReturnFromFunctionOutsideFunction => {
                 write!(f, "Cannot return from function outside of a function")
+            }
+            AppError::FunctionMustEndIfUSaySo => {
+                write!(f, "Function must end IF U SAY SO")
+            }
+            AppError::UnknownVariableType => {
+                write!(f, "Unknown variable type")
+            }
+            AppError::IncorrectFunctionArguments(called_func) => {
+                write!(f, "Incorrect function arguments for {called_func}")
+            }
+            AppError::LineParseError(tokens) => {
+                write!(f, "Line parse error:\t{tokens}")
+            }
+            AppError::FunctionArgumentsMustEndWithMkay => {
+                write!(f, "Function arguments must end with MKAY")
+            }
+            AppError::FunctionParseError => {
+                write!(f, "Could not parse function")
             }
         }
     }

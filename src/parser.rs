@@ -1,6 +1,6 @@
 use crate::{
     app_error::AppError,
-    lexer::{Keyword, Token, tokenize_line},
+    lexer::{Keyword, Token, Tokens, tokenize_line},
     types::{
         Expr, Statement,
         primitive::{Numbar, Numbr, Troof, Yarn},
@@ -43,26 +43,29 @@ pub fn parse_line(
             Token::Keyword(Keyword::Itz),
             Token::Keyword(Keyword::A),
             Token::Keyword(var_type),
-        ] => match var_type {
-            Keyword::Yarn => Ok(Some(Statement::IHasA(
-                variable_name.clone(),
-                Expr::Yarn(Yarn::default()),
-            ))),
-            Keyword::Troof => Ok(Some(Statement::IHasA(
-                variable_name.clone(),
-                Expr::Troof(Troof::default()),
-            ))),
-            Keyword::Numbar => Ok(Some(Statement::IHasA(
-                variable_name.clone(),
-                Expr::Numbar(Numbar::default()),
-            ))),
-            Keyword::Numbr => Ok(Some(Statement::IHasA(
-                variable_name.clone(),
-                Expr::Numbr(Numbr::default()),
-            ))),
-            Keyword::Noob => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
-            _ => Err(AppError::ParseError),
-        },
+        ] => {
+            let variable_name = variable_name.clone();
+            match var_type {
+                Keyword::Yarn => Ok(Some(Statement::IHasA(
+                    variable_name,
+                    Expr::Yarn(Yarn::default()),
+                ))),
+                Keyword::Troof => Ok(Some(Statement::IHasA(
+                    variable_name,
+                    Expr::Troof(Troof::default()),
+                ))),
+                Keyword::Numbar => Ok(Some(Statement::IHasA(
+                    variable_name,
+                    Expr::Numbar(Numbar::default()),
+                ))),
+                Keyword::Numbr => Ok(Some(Statement::IHasA(
+                    variable_name,
+                    Expr::Numbr(Numbr::default()),
+                ))),
+                Keyword::Noob => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
+                _ => Err(AppError::UnknownVariableType),
+            }
+        }
 
         [
             Token::Keyword(Keyword::I),
@@ -105,7 +108,7 @@ pub fn parse_line(
             let mut i = 0;
 
             if rest.is_empty() {
-                return Err(AppError::ParseError);
+                return Err(AppError::IncorrectFunctionArguments(called_func.clone()));
             }
 
             // Parse first argument, which just has YR <arg>
@@ -125,13 +128,13 @@ pub fn parse_line(
                         args.push(Expr::try_from(expr_token)?);
                         i += 3;
                     }
-                    _ => return Err(AppError::ParseError),
+                    _ => return Err(AppError::IncorrectFunctionArguments(called_func.clone())),
                 }
             }
 
             match rest.last() {
                 Some(Token::Keyword(Keyword::Mkay)) => (),
-                _ => return Err(AppError::ParseError),
+                _ => return Err(AppError::FunctionArgumentsMustEndWithMkay),
             }
 
             Ok(Some(Statement::IIz(called_func.clone(), args)))
@@ -152,7 +155,7 @@ pub fn parse_line(
 
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
-        _ => Err(AppError::ParseError),
+        _ => Err(AppError::LineParseError(Tokens(tokens.to_vec()))),
     }
 }
 
@@ -185,7 +188,7 @@ pub fn parse_function(
                     params.push(param.clone());
                     i += 1;
                 }
-                _ => return Err(AppError::ParseError),
+                _ => return Err(AppError::IncorrectFunctionArguments(func_name.clone())),
             }
 
             // Remaining params: AN YR <param>
@@ -201,14 +204,14 @@ pub fn parse_function(
                         params.push(param.clone());
                         i += 3;
                     }
-                    _ => return Err(AppError::ParseError),
+                    _ => return Err(AppError::IncorrectFunctionArguments(func_name.clone())),
                 }
             }
 
             (func_name, params)
         }
 
-        _ => return Err(AppError::ParseError),
+        _ => return Err(AppError::FunctionParseError),
     };
 
     let mut body = Vec::new();
@@ -246,7 +249,7 @@ pub fn parse_function(
     }
 
     if !if_u_say_so {
-        return Err(AppError::ParseError);
+        return Err(AppError::FunctionMustEndIfUSaySo);
     }
 
     Ok(Statement::HowIzI(func_name.clone(), params, body))

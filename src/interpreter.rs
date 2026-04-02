@@ -77,7 +77,7 @@ impl Interpreter {
             }
             Statement::Visible(expr) => {
                 let value = self.eval_expr(expr)?;
-                println!("{}", self.value_to_string(&value));
+                println!("{}", value);
             }
             Statement::IHasA(var_name, expr) => {
                 let value = self.eval_expr(expr)?;
@@ -220,16 +220,6 @@ impl Interpreter {
                 Ok(curr_scope.get(name).cloned().unwrap_or(Value::Noob))
             }
             Expr::Noob => Ok(Value::Noob),
-        }
-    }
-
-    fn value_to_string(&self, value: &Value) -> String {
-        match value {
-            Value::Numbar(n) => n.to_string(),
-            Value::Numbr(n) => n.to_string(),
-            Value::Yarn(s) => s.to_string(),
-            Value::Troof(b) => b.to_string(),
-            Value::Noob => "NOOB".into(),
         }
     }
 }

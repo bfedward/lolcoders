@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{app_error::AppError, types::identifier::Identifier};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,6 +30,39 @@ pub enum Keyword {
     R,
 }
 
+impl fmt::Display for Keyword {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let s = match self {
+            Keyword::Hai => "HAI",
+            Keyword::KThxBye => "KTHXBYE",
+            Keyword::Visible => "VISIBLE",
+            Keyword::I => "I",
+            Keyword::Itz => "ITZ",
+            Keyword::Has => "HAS",
+            Keyword::A => "A",
+            Keyword::How => "HOW",
+            Keyword::Iz => "IZ",
+            Keyword::If => "IF",
+            Keyword::U => "U",
+            Keyword::Say => "SAY",
+            Keyword::So => "SO",
+            Keyword::Yr => "YR",
+            Keyword::An => "AN",
+            Keyword::Mkay => "MKAY",
+            Keyword::Troof => "TROOF",
+            Keyword::Yarn => "YARN",
+            Keyword::Numbr => "NUMBR",
+            Keyword::Numbar => "NUMBAR",
+            Keyword::Noob => "NOOB",
+            Keyword::Found => "FOUND",
+            Keyword::Gtfo => "GTFO",
+            Keyword::R => "R",
+        };
+
+        write!(f, "{s}")
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Keyword(Keyword),
@@ -37,6 +72,30 @@ pub enum Token {
     Numbar(f64),
     Troof(bool),
     Noob,
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Token::Keyword(k) => write!(f, "{k}"),
+            Token::Identifier(id) => write!(f, "{id}"),
+            Token::Yarn(s) => write!(f, "\"{s}\""),
+            Token::Numbr(n) => write!(f, "{n}"),
+            Token::Numbar(n) => write!(f, "{n}"),
+            Token::Troof(b) => write!(f, "{}", if *b { "WIN" } else { "FAIL" }),
+            Token::Noob => write!(f, "NOOB"),
+        }
+    }
+}
+
+pub struct Tokens(pub Vec<Token>);
+
+impl fmt::Display for Tokens {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let strings: Vec<String> = self.0.iter().map(|t| t.to_string()).collect();
+
+        write!(f, "{}", strings.join(" "))
+    }
 }
 
 pub fn tokenize_line(line: &str) -> Result<Vec<Token>, AppError> {

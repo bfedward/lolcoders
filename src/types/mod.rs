@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{
     app_error::AppError,
     lexer::Token,
@@ -17,6 +19,18 @@ pub enum Value {
     Yarn(Yarn),
     Troof(Troof),
     Noob,
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Numbar(n) => write!(f, "{n}"),
+            Value::Numbr(n) => write!(f, "{n}"),
+            Value::Yarn(s) => write!(f, "{s}"),
+            Value::Troof(b) => write!(f, "{b}"),
+            Value::Noob => write!(f, "NOOB"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
