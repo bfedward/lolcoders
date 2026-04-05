@@ -30,6 +30,4 @@ IF U SAY SO
 I HAS A result ITZ A NUMBR
 result R I IZ add YR 3 AN YR 4 MKAY
 
-VISIBLE result
-
 KTHXBYE

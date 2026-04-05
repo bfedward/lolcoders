@@ -1,6 +1,9 @@
 use std::fmt::{self};
 
-use crate::{lexer::Tokens, types::identifier::Identifier};
+use crate::{
+    lexer::{Token, Tokens},
+    types::{identifier::Identifier, primitive::Yarn},
+};
 
 pub enum AppError {
     HaiMustBeFirstLine,
@@ -9,17 +12,23 @@ pub enum AppError {
     FunctionDoesNotExist(Identifier),
     NotEnoughArgsForFunction,
     InvalidIdentifier(String),
-    TokenCannotBeExpression,
+    TokenCannotBeExpression(Token),
     MissingExpression,
-    UnexpectedTokensInExpression,
     CouldNotGetCurrentVariableScope,
     CannotReturnFromFunctionOutsideFunction,
     FunctionMustEndIfUSaySo,
     UnknownVariableType,
-    IncorrectFunctionArguments(Identifier),
+    IncorrectFunctionArguments(Identifier, Tokens),
     LineParseError(Tokens),
     FunctionArgumentsMustEndWithMkay,
     FunctionParseError,
+    InvalidExpression(Tokens),
+    YarnIsNotANumbar(Yarn),
+    YarnIsNotANumbr(Yarn),
+    CannotSumYarns(Yarn, Yarn),
+    CannotSumYarn(Yarn),
+    CannotPerformMathsOnTroof,
+    CannotPerformMathsOnNoob,
 }
 
 impl fmt::Display for AppError {
@@ -37,14 +46,11 @@ impl fmt::Display for AppError {
             AppError::InvalidIdentifier(name) => {
                 write!(f, "Invalid variable identifier: {name}")
             }
-            AppError::TokenCannotBeExpression => {
-                write!(f, "Token cannot be expression")
+            AppError::TokenCannotBeExpression(token) => {
+                write!(f, "Token {token} cannot be expression")
             }
             AppError::MissingExpression => {
                 write!(f, "Missing expression")
-            }
-            AppError::UnexpectedTokensInExpression => {
-                write!(f, "Unexpected tokens in expression")
             }
             AppError::CouldNotGetCurrentVariableScope => {
                 write!(f, "Could not get current variable scope")
@@ -58,8 +64,11 @@ impl fmt::Display for AppError {
             AppError::UnknownVariableType => {
                 write!(f, "Unknown variable type")
             }
-            AppError::IncorrectFunctionArguments(called_func) => {
-                write!(f, "Incorrect function arguments for {called_func}")
+            AppError::IncorrectFunctionArguments(called_func, tokens) => {
+                write!(
+                    f,
+                    "Incorrect function arguments for {called_func}: {tokens}"
+                )
             }
             AppError::LineParseError(tokens) => {
                 write!(f, "Line parse error:\t{tokens}")
@@ -69,6 +78,27 @@ impl fmt::Display for AppError {
             }
             AppError::FunctionParseError => {
                 write!(f, "Could not parse function")
+            }
+            AppError::InvalidExpression(tokens) => {
+                write!(f, "Invalid expression: {tokens}")
+            }
+            AppError::YarnIsNotANumbar(yarn) => {
+                write!(f, "YARN \"{yarn}\" is not a NUMBAR")
+            }
+            AppError::YarnIsNotANumbr(yarn) => {
+                write!(f, "YARN \"{yarn}\" is not a NUMBR")
+            }
+            AppError::CannotSumYarns(a, b) => {
+                write!(f, "Cannot sum YARNs: SUM \"{a}\" AN \"{b}\"")
+            }
+            AppError::CannotSumYarn(a) => {
+                write!(f, "Cannot sum with YARN: {a}")
+            }
+            AppError::CannotPerformMathsOnTroof => {
+                write!(f, "Cannot perform maths expressions with TROOF")
+            }
+            AppError::CannotPerformMathsOnNoob => {
+                write!(f, "Cannot perform maths expressions with NOOB")
             }
         }
     }

@@ -28,6 +28,8 @@ pub enum Keyword {
     Found,
     Gtfo,
     R,
+    Sum,
+    Of,
 }
 
 impl fmt::Display for Keyword {
@@ -57,6 +59,8 @@ impl fmt::Display for Keyword {
             Keyword::Found => "FOUND",
             Keyword::Gtfo => "GTFO",
             Keyword::R => "R",
+            Keyword::Sum => "SUM",
+            Keyword::Of => "OF",
         };
 
         write!(f, "{s}")
@@ -194,6 +198,8 @@ fn match_keyword(word: &str) -> Option<Keyword> {
         "FOUND" => Some(Keyword::Found),
         "GTFO" => Some(Keyword::Gtfo),
         "R" => Some(Keyword::R),
+        "SUM" => Some(Keyword::Sum),
+        "OF" => Some(Keyword::Of),
         _ => None,
     }
 }

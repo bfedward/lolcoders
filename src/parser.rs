@@ -24,7 +24,7 @@ pub fn parse_line(
         }
 
         [Token::Keyword(Keyword::Visible), rest @ ..] => {
-            let expr = rest.try_into()?;
+            let (expr, _) = Expr::parse(rest)?;
             Ok(Some(Statement::Visible(expr)))
         }
 
@@ -75,7 +75,7 @@ pub fn parse_line(
             Token::Keyword(Keyword::Itz),
             rest @ ..,
         ] => {
-            let expr = rest.try_into()?;
+            let (expr, _) = Expr::parse(rest)?;
             Ok(Some(Statement::IHasA(variable_name.clone(), expr)))
         }
 
@@ -108,7 +108,10 @@ pub fn parse_line(
             let mut i = 0;
 
             if rest.is_empty() {
-                return Err(AppError::IncorrectFunctionArguments(called_func.clone()));
+                return Err(AppError::IncorrectFunctionArguments(
+                    called_func.clone(),
+                    Tokens(tokens.to_vec()),
+                ));
             }
 
             // Parse first argument, which just has YR <arg>
@@ -128,7 +131,12 @@ pub fn parse_line(
                         args.push(Expr::try_from(expr_token)?);
                         i += 3;
                     }
-                    _ => return Err(AppError::IncorrectFunctionArguments(called_func.clone())),
+                    _ => {
+                        return Err(AppError::IncorrectFunctionArguments(
+                            called_func.clone(),
+                            Tokens(tokens.to_vec()),
+                        ));
+                    }
                 }
             }
 
@@ -138,6 +146,64 @@ pub fn parse_line(
             }
 
             Ok(Some(Statement::IIz(called_func.clone(), args)))
+        }
+
+        [
+            Token::Identifier(var_name),
+            Token::Keyword(Keyword::R),
+            Token::Keyword(Keyword::I),
+            Token::Keyword(Keyword::Iz),
+            Token::Identifier(called_func),
+            Token::Keyword(Keyword::Yr),
+            rest @ ..,
+        ] => {
+            let mut args = Vec::new();
+            let mut i = 0;
+
+            if rest.is_empty() {
+                return Err(AppError::IncorrectFunctionArguments(
+                    called_func.clone(),
+                    Tokens(tokens.to_vec()),
+                ));
+            }
+
+            // Parse first argument, which just has YR <arg>
+            args.push(Expr::try_from(&rest[i])?);
+            i += 1;
+
+            // remaining args, which have AN YR <arg>
+            while i < rest.len() {
+                match rest.get(i..i + 3) {
+                    Some(
+                        [
+                            Token::Keyword(Keyword::An),
+                            Token::Keyword(Keyword::Yr),
+                            expr_token,
+                        ],
+                    ) => {
+                        args.push(Expr::try_from(expr_token)?);
+                        i += 3;
+                    }
+                    None => break,
+                    _ => {
+                        return Err(AppError::IncorrectFunctionArguments(
+                            called_func.clone(),
+                            Tokens(tokens.to_vec()),
+                        ));
+                    }
+                }
+            }
+
+            match rest.last() {
+                Some(Token::Keyword(Keyword::Mkay)) => (),
+                _ => return Err(AppError::FunctionArgumentsMustEndWithMkay),
+            }
+
+            Ok(Some(Statement::VarRIIzFunc(
+                var_name.clone(),
+                called_func.clone(),
+                args,
+            )))
         }
 
         [
@@ -188,7 +254,12 @@ pub fn parse_function(
                     params.push(param.clone());
                     i += 1;
                 }
-                _ => return Err(AppError::IncorrectFunctionArguments(func_name.clone())),
+                _ => {
+                    return Err(AppError::IncorrectFunctionArguments(
+                        func_name.clone(),
+                        Tokens(tokens.to_vec()),
+                    ));
+                }
             }
 
             // Remaining params: AN YR <param>
@@ -204,7 +275,12 @@ pub fn parse_function(
                         params.push(param.clone());
                         i += 3;
                     }
-                    _ => return Err(AppError::IncorrectFunctionArguments(func_name.clone())),
+                    _ => {
+                        return Err(AppError::IncorrectFunctionArguments(
+                            func_name.clone(),
+                            Tokens(tokens.to_vec()),
+                        ));
+                    }
                 }
             }
 
@@ -236,7 +312,7 @@ pub fn parse_function(
                 Token::Keyword(Keyword::Yr),
                 rest @ ..,
             ] => {
-                let expr: Expr = rest.try_into()?;
+                let (expr, _) = Expr::parse(rest)?;
                 body.push(Statement::FoundYr(expr))
             }
             [Token::Keyword(Keyword::Gtfo)] => body.push(Statement::Gtfo),

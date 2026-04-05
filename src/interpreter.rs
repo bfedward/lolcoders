@@ -1,4 +1,4 @@
-use crate::lexer::tokenize_line;
+use crate::lexer::{Tokens, tokenize_line};
 use crate::parser::parse_line;
 
 use crate::types::identifier::Identifier;
@@ -31,6 +31,18 @@ impl Interpreter {
         self.variables.last()
     }
 
+    // This is for values returned from functions.
+    // Functions run in the variable scope stacked above the calling scope,
+    // so the returned value is for a variable in the calling scope.
+    fn previous_scope_mut(&mut self) -> Option<&mut HashMap<Identifier, Value>> {
+        if self.variables.len() < 2 {
+            return None;
+        }
+
+        let idx = self.variables.len() - 2;
+        self.variables.get_mut(idx)
+    }
+
     pub fn execute_source(&mut self, source: String) -> Result<(), AppError> {
         let mut lines = source.lines().peekable();
         let mut statements = Vec::new();
@@ -41,6 +53,16 @@ impl Interpreter {
             if let Some(stmt) = parse_line(&tokens, &mut lines)? {
                 statements.push(stmt);
             }
+
+            // // keep this for debugging for now
+            // match parse_line(&tokens, &mut lines) {
+            //     Ok(Some(stmt)) => statements.push(stmt),
+            //     Ok(None) => (),
+            //     Err(e) => {
+            //         println!("{}", Tokens(tokens));
+            //         return Err(e);
+            //     }
+            // }
         }
 
         for (i, statement) in statements.iter().enumerate() {
@@ -180,19 +202,22 @@ impl Interpreter {
                             return Ok(());
                         }
                         Statement::FoundYr(expr) => {
-                            self.variables.pop();
-
                             let val = self.eval_expr(expr)?;
 
-                            let curr_scope = self
-                                .current_scope_mut()
+                            let previous_scope = self
+                                .previous_scope_mut()
                                 .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
-                            let _ = curr_scope
+                            let _ = previous_scope
                                 .get(var_name)
                                 .ok_or(AppError::VariableDoesNotExist(var_name.clone()))?;
 
-                            curr_scope.entry(var_name.clone()).and_modify(|e| *e = val);
+                            previous_scope
+                                .entry(var_name.clone())
+                                .and_modify(|e| *e = val);
+
+                            // we're exiting a function so pop the current scope
+                            self.variables.pop();
 
                             return Ok(());
                         }
@@ -220,6 +245,12 @@ impl Interpreter {
                 Ok(curr_scope.get(name).cloned().unwrap_or(Value::Noob))
             }
             Expr::Noob => Ok(Value::Noob),
+            Expr::Sum(left, right) => {
+                let left = self.eval_expr(left)?;
+                let right = self.eval_expr(right)?;
+
+                left + right
+            }
         }
     }
 }
