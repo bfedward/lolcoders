@@ -1,71 +1,6 @@
 use std::fmt;
 
-use crate::{app_error::AppError, types::identifier::Identifier};
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Keyword {
-    Hai,
-    KThxBye,
-    Visible,
-    I,
-    Itz,
-    Has,
-    A,
-    How,
-    Iz,
-    If,
-    U,
-    Say,
-    So,
-    Yr,
-    An,
-    Mkay,
-    Troof,
-    Yarn,
-    Numbr,
-    Numbar,
-    Noob,
-    Found,
-    Gtfo,
-    R,
-    Sum,
-    Of,
-}
-
-impl fmt::Display for Keyword {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let s = match self {
-            Keyword::Hai => "HAI",
-            Keyword::KThxBye => "KTHXBYE",
-            Keyword::Visible => "VISIBLE",
-            Keyword::I => "I",
-            Keyword::Itz => "ITZ",
-            Keyword::Has => "HAS",
-            Keyword::A => "A",
-            Keyword::How => "HOW",
-            Keyword::Iz => "IZ",
-            Keyword::If => "IF",
-            Keyword::U => "U",
-            Keyword::Say => "SAY",
-            Keyword::So => "SO",
-            Keyword::Yr => "YR",
-            Keyword::An => "AN",
-            Keyword::Mkay => "MKAY",
-            Keyword::Troof => "TROOF",
-            Keyword::Yarn => "YARN",
-            Keyword::Numbr => "NUMBR",
-            Keyword::Numbar => "NUMBAR",
-            Keyword::Noob => "NOOB",
-            Keyword::Found => "FOUND",
-            Keyword::Gtfo => "GTFO",
-            Keyword::R => "R",
-            Keyword::Sum => "SUM",
-            Keyword::Of => "OF",
-        };
-
-        write!(f, "{s}")
-    }
-}
+use crate::{app_error::AppError, keywords::Keyword, types::identifier::Identifier};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
@@ -165,41 +100,9 @@ fn classify_token(word: String) -> Result<Token, AppError> {
         return Ok(Token::Numbar(n));
     }
 
-    if let Some(keyword) = match_keyword(&word) {
+    if let Some(keyword) = Keyword::from_str(&word) {
         return Ok(Token::Keyword(keyword));
     }
 
     Ok(Token::Identifier(Identifier::new(word)?))
-}
-
-fn match_keyword(word: &str) -> Option<Keyword> {
-    match word {
-        "HAI" => Some(Keyword::Hai),
-        "KTHXBYE" => Some(Keyword::KThxBye),
-        "VISIBLE" => Some(Keyword::Visible),
-        "I" => Some(Keyword::I),
-        "ITZ" => Some(Keyword::Itz),
-        "HAS" => Some(Keyword::Has),
-        "A" => Some(Keyword::A),
-        "HOW" => Some(Keyword::How),
-        "IZ" => Some(Keyword::Iz),
-        "IF" => Some(Keyword::If),
-        "U" => Some(Keyword::U),
-        "SAY" => Some(Keyword::Say),
-        "SO" => Some(Keyword::So),
-        "YR" => Some(Keyword::Yr),
-        "AN" => Some(Keyword::An),
-        "MKAY" => Some(Keyword::Mkay),
-        "TROOF" => Some(Keyword::Troof),
-        "YARN" => Some(Keyword::Yarn),
-        "NUMBR" => Some(Keyword::Numbr),
-        "NUMBAR" => Some(Keyword::Numbar),
-        "NOOB" => Some(Keyword::Noob),
-        "FOUND" => Some(Keyword::Found),
-        "GTFO" => Some(Keyword::Gtfo),
-        "R" => Some(Keyword::R),
-        "SUM" => Some(Keyword::Sum),
-        "OF" => Some(Keyword::Of),
-        _ => None,
-    }
 }

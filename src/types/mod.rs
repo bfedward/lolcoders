@@ -3,7 +3,8 @@ use std::ops::Add;
 
 use crate::{
     app_error::AppError,
-    lexer::{Keyword, Token, Tokens},
+    keywords::Keyword,
+    lexer::{Token, Tokens},
     types::{
         identifier::Identifier,
         primitive::{Numbar, Numbr, Troof, Yarn},
@@ -139,8 +140,8 @@ impl Expr {
                 // consumed_left is the number of tokens consumed from tokens[2..]
                 // starting immediately after "SUM OF".
                 //
-                // e.g. consumed_left would be 1 for a literal or 5 for 
-                // a nested SUM with two literals. 
+                // e.g. consumed_left would be 1 for a literal or 5 for
+                // a nested SUM with two literals.
                 let (left, consumed_left) = Expr::parse(&tokens[2..])?;
 
                 // SUM + OF = 2 tokens

@@ -1,6 +1,7 @@
 use crate::{
     app_error::AppError,
-    lexer::{Keyword, Token, Tokens, tokenize_line},
+    keywords::Keyword,
+    lexer::{Token, Tokens, tokenize_line},
     types::{
         Expr, Statement,
         primitive::{Numbar, Numbr, Troof, Yarn},

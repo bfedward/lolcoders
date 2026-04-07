@@ -1,12 +1,6 @@
 use std::fmt;
 
-use crate::app_error::AppError;
-
-const KEYWORDS: &[&str] = &[
-    "HAI", "KTHXBYE", "VISIBLE", "I", "HAS", "A", "HOW", "IZ", "IF", "U", "SAY", "SO", "YR", "AN",
-    "MKAY", "WIN", "FAIL", "YARN", "TROOF", "NUMBR", "NUMBAR", "NOOB", "FOUND", "GTFO", "R", "SUM",
-    "OF",
-];
+use crate::{app_error::AppError, keywords::Keyword};
 
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Identifier {
@@ -19,7 +13,7 @@ impl Identifier {
             return Err(AppError::InvalidIdentifier(name));
         }
 
-        if KEYWORDS.contains(&name.as_str()) {
+        if Keyword::ALL.contains(&name.as_str()) {
             return Err(AppError::InvalidIdentifier(name));
         }
 

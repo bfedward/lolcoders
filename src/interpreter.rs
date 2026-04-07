@@ -1,4 +1,4 @@
-use crate::lexer::{Tokens, tokenize_line};
+use crate::lexer::tokenize_line;
 use crate::parser::parse_line;
 
 use crate::types::identifier::Identifier;
