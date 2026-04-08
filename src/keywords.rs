@@ -68,5 +68,11 @@ define_keywords! {
     Gtfo => "GTFO",
     R => "R",
     Sum => "SUM",
+    Diff => "DIFF",
+    Produkt => "PRODUKT",
+    Quoshunt => "QUOSHUNT",
+    Mod => "MOD",
+    Biggr => "BIGGR",
+    Smallr => "SMALLR",
     Of => "OF",
 }

@@ -1,9 +1,10 @@
 use crate::{
     app_error::AppError,
+    expression::Expr,
     keywords::Keyword,
     lexer::{Token, Tokens, tokenize_line},
     types::{
-        Expr, Statement,
+        Statement,
         primitive::{Numbar, Numbr, Troof, Yarn},
     },
 };

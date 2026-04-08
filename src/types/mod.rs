@@ -3,8 +3,7 @@ use std::ops::Add;
 
 use crate::{
     app_error::AppError,
-    keywords::Keyword,
-    lexer::{Token, Tokens},
+    expression::Expr,
     types::{
         identifier::Identifier,
         primitive::{Numbar, Numbr, Troof, Yarn},
@@ -91,93 +90,6 @@ impl fmt::Display for Value {
             Value::Yarn(s) => write!(f, "{s}"),
             Value::Troof(b) => write!(f, "{b}"),
             Value::Noob => write!(f, "NOOB"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Expr {
-    Numbar(Numbar),
-    Numbr(Numbr),
-    Yarn(Yarn),
-    Troof(Troof),
-    Variable(Identifier),
-    Noob,
-    Sum(Box<Expr>, Box<Expr>),
-}
-
-impl TryFrom<&Token> for Expr {
-    type Error = AppError;
-
-    fn try_from(token: &Token) -> Result<Self, AppError> {
-        match token {
-            Token::Numbar(n) => Ok(Expr::Numbar(Numbar::new(*n))),
-            Token::Numbr(n) => Ok(Expr::Numbr(Numbr::new(*n))),
-            Token::Yarn(s) => Ok(Expr::Yarn(Yarn::new(s.clone()))),
-            Token::Troof(b) => Ok(Expr::Troof(Troof::new(*b))),
-            Token::Noob => Ok(Expr::Noob),
-            Token::Identifier(ident) => Ok(Expr::Variable(ident.clone())),
-            Token::Keyword(_) => Err(AppError::TokenCannotBeExpression(token.clone())),
-        }
-    }
-}
-
-impl Expr {
-    pub fn parse(tokens: &[Token]) -> Result<(Self, usize), AppError> {
-        match tokens.first() {
-            Some(Token::Keyword(Keyword::Sum)) => {
-                // Check that OF comes after SUM
-                match tokens.get(1) {
-                    Some(Token::Keyword(Keyword::Of)) => {}
-                    _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
-                }
-
-                // Parse expression after "SUM OF"
-                // We have &tokens[2..] here because SUM + OF = 2 tokens
-                // We don't know what comes after OF! Could be a literal, e.g. SUM OF 1 AN 2
-                // Or could be a nested expression like SUM OF SUM OF 1 AN 2 AN 4
-                //
-                // consumed_left is the number of tokens consumed from tokens[2..]
-                // starting immediately after "SUM OF".
-                //
-                // e.g. consumed_left would be 1 for a literal or 5 for
-                // a nested SUM with two literals.
-                let (left, consumed_left) = Expr::parse(&tokens[2..])?;
-
-                // SUM + OF = 2 tokens
-                // consumed_left = the number of tokens that were consumed in parsing
-                // the left side of the SUM.
-                // We expect AN between the left and right sides of the SUM.
-                match tokens.get(2 + consumed_left) {
-                    Some(Token::Keyword(Keyword::An)) => {}
-                    _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
-                }
-
-                // SUM + OF + AN = 3 tokens
-                // consumed_left = the number of tokens that were consumed in parsing
-                // the left side of the SUM.
-                //
-                // consumed_right is the number of tokens that are consumed to parse the right
-                // side of the SUM, which could be a literal or another nexted expression.
-                let (right, consumed_right) = Expr::parse(&tokens[3 + consumed_left..])?;
-
-                // We have to use Boxes because Rust needs to know the size of everything on the stack.
-                // We use Box because Expr is recursive.
-                // Without Box, Expr::Sum(Expr, Expr) would have infinite size at compile time
-                // because Expr would contain itself directly.
-                // Box gives us a fixed-size pointer on the stack with the actual data on the heap.
-                //
-                // SUM + OF + AN = 3 tokens
-                Ok((
-                    Expr::Sum(Box::new(left), Box::new(right)),
-                    3 + consumed_left + consumed_right,
-                ))
-            }
-
-            // everything except SUM is just converting 1 Token to one Expr.
-            Some(token) => Ok((Expr::try_from(token)?, 1)),
-
-            None => Err(AppError::MissingExpression),
         }
     }
 }

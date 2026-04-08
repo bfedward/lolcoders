@@ -1,4 +1,5 @@
 mod app_error;
+mod expression;
 mod interpreter;
 mod keywords;
 mod lexer;

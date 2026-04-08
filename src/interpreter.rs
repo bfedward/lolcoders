@@ -1,10 +1,12 @@
+use crate::expression::Expr;
 use crate::lexer::tokenize_line;
 use crate::parser::parse_line;
 
+use crate::expression::MathOp::{Biggr, Diff, Mod, Produkt, Quoshunt, Smallr, Sum};
 use crate::types::identifier::Identifier;
 use crate::{
     app_error::AppError,
-    types::{Expr, Statement, Value},
+    types::{Statement, Value},
 };
 use std::collections::HashMap;
 
@@ -245,11 +247,19 @@ impl Interpreter {
                 Ok(curr_scope.get(name).cloned().unwrap_or(Value::Noob))
             }
             Expr::Noob => Ok(Value::Noob),
-            Expr::Sum(left, right) => {
-                let left = self.eval_expr(left)?;
-                let right = self.eval_expr(right)?;
+            Expr::Math(math_expr) => {
+                let left = self.eval_expr(&math_expr.left)?;
+                let right = self.eval_expr(&math_expr.right)?;
 
-                left + right
+                match math_expr.op {
+                    Sum => left + right,
+                    Diff => todo!(),
+                    Produkt => todo!(),
+                    Quoshunt => todo!(),
+                    Mod => todo!(),
+                    Biggr => todo!(),
+                    Smallr => todo!(),
+                }
             }
         }
     }
