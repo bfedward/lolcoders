@@ -1,7 +1,37 @@
+use std::fmt::Display;
 use std::str::FromStr;
-use std::{fmt::Display, ops::Add};
 
 use crate::app_error::AppError;
+use crate::types::Value;
+
+// This is used for internal logic of maths operations. When parsing a yarn, we want to check if it
+// contains a Numbar first and a Numbr second. So this Number enum holds both possibilies and allows
+// generic maths logic.
+pub enum Number {
+    Int(i64),
+    Float(f64),
+}
+
+impl Number {
+    pub fn into_value(self) -> Value {
+        match self {
+            Number::Int(i) => Value::Numbr(Numbr::new(i)),
+            Number::Float(f) => Value::Numbar(Numbar::new(f)),
+        }
+    }
+}
+
+impl From<&Numbar> for Number {
+    fn from(value: &Numbar) -> Self {
+        Number::Float(value.value)
+    }
+}
+
+impl From<&Numbr> for Number {
+    fn from(value: &Numbr) -> Self {
+        Number::Int(value.value)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Numbar {
@@ -11,21 +41,6 @@ pub struct Numbar {
 impl Numbar {
     pub fn new(v: f64) -> Self {
         Numbar { value: v }
-    }
-}
-impl Add<Numbar> for Numbar {
-    type Output = Numbar;
-
-    fn add(self, rhs: Numbar) -> Self::Output {
-        Numbar::new(self.value + rhs.value)
-    }
-}
-
-impl Add<Numbr> for Numbar {
-    type Output = Numbar;
-
-    fn add(self, rhs: Numbr) -> Self::Output {
-        Numbar::new(self.value + rhs.value as f64)
     }
 }
 
@@ -57,22 +72,6 @@ impl Numbr {
     }
 }
 
-impl Add<Numbr> for Numbr {
-    type Output = Numbr;
-
-    fn add(self, rhs: Numbr) -> Self::Output {
-        Numbr::new(self.value + rhs.value)
-    }
-}
-
-impl Add<Numbar> for Numbr {
-    type Output = Numbar;
-
-    fn add(self, rhs: Numbar) -> Self::Output {
-        Numbar::new(self.value as f64 + rhs.value)
-    }
-}
-
 impl TryFrom<Yarn> for Numbr {
     type Error = AppError;
 
@@ -97,14 +96,6 @@ pub struct Yarn {
 impl Yarn {
     pub fn new(v: String) -> Self {
         Yarn { value: v }
-    }
-}
-
-impl Add for Yarn {
-    type Output = Yarn;
-
-    fn add(self, rhs: Yarn) -> Self::Output {
-        Yarn::new(self.value + &rhs.value)
     }
 }
 

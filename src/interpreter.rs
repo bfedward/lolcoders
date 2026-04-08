@@ -2,7 +2,7 @@ use crate::expression::Expr;
 use crate::lexer::tokenize_line;
 use crate::parser::parse_line;
 
-use crate::expression::MathOp::{Biggr, Diff, Mod, Produkt, Quoshunt, Smallr, Sum};
+use crate::types::eval_maths_expr;
 use crate::types::identifier::Identifier;
 use crate::{
     app_error::AppError,
@@ -251,15 +251,7 @@ impl Interpreter {
                 let left = self.eval_expr(&math_expr.left)?;
                 let right = self.eval_expr(&math_expr.right)?;
 
-                match math_expr.op {
-                    Sum => left + right,
-                    Diff => todo!(),
-                    Produkt => todo!(),
-                    Quoshunt => todo!(),
-                    Mod => todo!(),
-                    Biggr => todo!(),
-                    Smallr => todo!(),
-                }
+                eval_maths_expr(math_expr, left, right)
             }
         }
     }

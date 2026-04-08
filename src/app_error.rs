@@ -25,10 +25,11 @@ pub enum AppError {
     InvalidExpression(Tokens),
     YarnIsNotANumbar(Yarn),
     YarnIsNotANumbr(Yarn),
-    CannotSumYarns(Yarn, Yarn),
-    CannotSumYarn(Yarn),
+    YarnIsNotANumber(Yarn),
     CannotPerformMathsOnTroof,
     CannotPerformMathsOnNoob,
+    DivisionByZero,
+    NumberOverflow,
 }
 
 impl fmt::Display for AppError {
@@ -88,17 +89,20 @@ impl fmt::Display for AppError {
             AppError::YarnIsNotANumbr(yarn) => {
                 write!(f, "YARN \"{yarn}\" is not a NUMBR")
             }
-            AppError::CannotSumYarns(a, b) => {
-                write!(f, "Cannot sum YARNs: SUM \"{a}\" AN \"{b}\"")
-            }
-            AppError::CannotSumYarn(a) => {
-                write!(f, "Cannot sum with YARN: {a}")
+            AppError::YarnIsNotANumber(yarn) => {
+                write!(f, "YARN \"{yarn}\" is not a number")
             }
             AppError::CannotPerformMathsOnTroof => {
                 write!(f, "Cannot perform maths expressions with TROOF")
             }
             AppError::CannotPerformMathsOnNoob => {
                 write!(f, "Cannot perform maths expressions with NOOB")
+            }
+            AppError::DivisionByZero => {
+                write!(f, "Division by zero")
+            }
+            AppError::NumberOverflow => {
+                write!(f, "Number overflow")
             }
         }
     }

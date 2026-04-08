@@ -1,12 +1,11 @@
 use std::fmt;
-use std::ops::Add;
 
 use crate::{
     app_error::AppError,
-    expression::Expr,
+    expression::{Expr, MathOp, MathsExpr},
     types::{
         identifier::Identifier,
-        primitive::{Numbar, Numbr, Troof, Yarn},
+        primitive::{Numbar, Number, Numbr, Troof, Yarn},
     },
 };
 
@@ -22,64 +21,124 @@ pub enum Value {
     Noob,
 }
 
-impl Add for Value {
-    type Output = Result<Value, AppError>;
+impl Value {
+    fn as_number(&self) -> Result<Number, AppError> {
+        match self {
+            Value::Numbr(n) => Ok(Number::from(n)),
 
-    fn add(self, rhs: Value) -> Self::Output {
-        match (self, rhs) {
-            (Value::Numbr(a), Value::Numbr(b)) => Ok(Value::Numbr(a + b)),
+            Value::Numbar(n) => Ok(Number::from(n)),
 
-            (Value::Numbar(a), Value::Numbar(b)) => Ok(Value::Numbar(a + b)),
-
-            // mixed numeric
-            (Value::Numbr(a), Value::Numbar(b)) => Ok(Value::Numbar(b + a)),
-
-            (Value::Numbar(a), Value::Numbr(b)) => Ok(Value::Numbar(a + b)),
-
-            (Value::Yarn(a), Value::Yarn(b)) => {
-                let a_numbar: Result<Numbar, AppError> = a.clone().try_into();
-                let b_numbar: Result<Numbar, AppError> = b.clone().try_into();
-
-                match (a_numbar, b_numbar) {
-                    (Ok(a_numbar), Ok(b_numbar)) => Ok(Value::Numbar(a_numbar + b_numbar)),
-                    (Ok(a_numbar), Err(AppError::YarnIsNotANumbar(_))) => {
-                        let b_numbr: Numbr = b.try_into()?;
-                        Ok(Value::Numbar(a_numbar + b_numbr))
-                    }
-                    (Err(AppError::YarnIsNotANumbar(_)), Ok(b_numbar)) => {
-                        let a_numbr: Numbr = a.try_into()?;
-                        Ok(Value::Numbar(a_numbr + b_numbar))
-                    }
-                    _ => Err(AppError::CannotSumYarns(a, b)),
+            Value::Yarn(y) => {
+                // Try integer first
+                let int: Result<Numbr, AppError> = y.clone().try_into();
+                if let Ok(int) = int {
+                    return Ok(Number::from(&int));
                 }
-            }
-            (Value::Numbar(numbar), Value::Yarn(yarn))
-            | (Value::Yarn(yarn), Value::Numbar(numbar)) => {
-                let yarn_numbar: Result<Numbar, AppError> = yarn.clone().try_into();
 
-                match yarn_numbar {
-                    Ok(yarn_numbar) => Ok(Value::Numbar(numbar + yarn_numbar)),
-                    Err(AppError::YarnIsNotANumbar(_)) => {
-                        let yarn_numbr: Numbr = yarn.try_into()?;
-                        Ok(Value::Numbar(numbar + yarn_numbr))
-                    }
-                    _ => Err(AppError::CannotSumYarn(yarn)),
+                // Then float
+                let float: Result<Numbar, AppError> = y.clone().try_into();
+                if let Ok(float) = float {
+                    return Ok(Number::from(&float));
                 }
-            }
-            (Value::Numbr(numbr), Value::Yarn(yarn)) | (Value::Yarn(yarn), Value::Numbr(numbr)) => {
-                let yarn_numbr: Result<Numbr, AppError> = yarn.clone().try_into();
 
-                match yarn_numbr {
-                    Ok(yarn_numbr) => Ok(Value::Numbr(numbr + yarn_numbr)),
-                    _ => Err(AppError::CannotSumYarn(yarn)),
-                }
+                Err(AppError::YarnIsNotANumber(y.clone()))
             }
-            (Value::Troof(_), _) => Err(AppError::CannotPerformMathsOnTroof),
-            (_, Value::Troof(_)) => Err(AppError::CannotPerformMathsOnTroof),
-            (Value::Noob, _) => Err(AppError::CannotPerformMathsOnNoob),
-            (_, Value::Noob) => Err(AppError::CannotPerformMathsOnTroof),
+
+            Value::Troof(_) => Err(AppError::CannotPerformMathsOnTroof),
+            Value::Noob => Err(AppError::CannotPerformMathsOnNoob),
         }
     }
+}
+
+fn apply_numeric_op<X, Y>(
+    left: Value,
+    right: Value,
+    int_op: X,
+    float_op: Y,
+) -> Result<Value, AppError>
+where
+    X: Fn(i64, i64) -> Option<i64>,
+    Y: Fn(f64, f64) -> f64,
+{
+    let l = left.as_number()?;
+    let r = right.as_number()?;
+
+    let result = match (l, r) {
+        (Number::Int(a), Number::Int(b)) => {
+            let res = int_op(a, b).ok_or(AppError::NumberOverflow)?;
+            Number::Int(res)
+        }
+
+        (Number::Int(a), Number::Float(b)) => {
+            Number::Float(check_float_overflow(float_op(a as f64, b))?)
+        }
+
+        (Number::Float(a), Number::Int(b)) => {
+            Number::Float(check_float_overflow(float_op(a, b as f64))?)
+        }
+
+        (Number::Float(a), Number::Float(b)) => {
+            Number::Float(check_float_overflow(float_op(a, b))?)
+        }
+    };
+
+    Ok(result.into_value())
+}
+
+pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Value, AppError> {
+    match op.op {
+        MathOp::Sum => apply_numeric_op(left, right, i64::checked_add, |a, b| a + b),
+
+        MathOp::Diff => apply_numeric_op(left, right, i64::checked_sub, |a, b| a - b),
+
+        MathOp::Produkt => apply_numeric_op(left, right, i64::checked_mul, |a, b| a * b),
+        MathOp::Quoshunt => {
+            let l = left.as_number()?;
+            let r = right.as_number()?;
+
+            if check_zero(&r) {
+                return Err(AppError::DivisionByZero);
+            }
+
+            match (l, r) {
+                (Number::Int(_), Number::Int(0)) => Err(AppError::DivisionByZero),
+
+                (Number::Int(a), Number::Int(b)) => {
+                    Ok(Value::Numbar(Numbar::new(a as f64 / b as f64)))
+                }
+
+                (Number::Int(a), Number::Float(b)) => Ok(Value::Numbar(Numbar::new(a as f64 / b))),
+
+                (Number::Float(a), Number::Int(b)) => Ok(Value::Numbar(Numbar::new(a / b as f64))),
+
+                (Number::Float(a), Number::Float(b)) => Ok(Value::Numbar(Numbar::new(a / b))),
+            }
+        }
+
+        MathOp::Mod => apply_numeric_op(left, right, |a, b| Some(a % b), |a, b| a % b),
+
+        MathOp::Biggr => apply_numeric_op(left, right, |a, b| Some(a.max(b)), f64::max),
+
+        MathOp::Smallr => apply_numeric_op(left, right, |a, b| Some(a.min(b)), f64::min),
+    }
+}
+
+fn check_zero(n: &Number) -> bool {
+    match n {
+        Number::Int(0) => true,
+        Number::Float(f) => *f == 0.0,
+        _ => false,
+    }
+}
+
+fn check_float_overflow(f: f64) -> Result<f64, AppError> {
+    if f.is_infinite() {
+        return Err(AppError::NumberOverflow);
+    }
+    if f.is_nan() {
+        return Err(AppError::NumberOverflow);
+    }
+    Ok(f)
 }
 
 impl fmt::Display for Value {
