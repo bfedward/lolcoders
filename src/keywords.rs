@@ -75,4 +75,10 @@ define_keywords! {
     Biggr => "BIGGR",
     Smallr => "SMALLR",
     Of => "OF",
+    Both => "BOTH",
+    Either => "EITHER",
+    Won => "WON",
+    Not => "NOT",
+    All => "ALL",
+    Any => "ANY"
 }

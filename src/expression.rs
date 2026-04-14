@@ -9,6 +9,32 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum BoolOp {
+    Both,
+    Either,
+    Won,
+    Not,
+    All,
+    Any,
+}
+
+impl TryFrom<&Token> for BoolOp {
+    type Error = AppError;
+
+    fn try_from(token: &Token) -> Result<Self, Self::Error> {
+        match token {
+            Token::Keyword(Keyword::Both) => Ok(BoolOp::Both),
+            Token::Keyword(Keyword::Either) => Ok(BoolOp::Either),
+            Token::Keyword(Keyword::Won) => Ok(BoolOp::Won),
+            Token::Keyword(Keyword::Not) => Ok(BoolOp::Not),
+            Token::Keyword(Keyword::All) => Ok(BoolOp::All),
+            Token::Keyword(Keyword::Any) => Ok(BoolOp::Any),
+            _ => Err(AppError::InvalidExpression(Tokens(vec![token.clone()]))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum MathOp {
     Sum,
     Diff,
@@ -52,6 +78,7 @@ pub enum Expr {
     Variable(Identifier),
     Noob,
     Math(MathsExpr),
+    Bool { op: BoolOp, args: Vec<Expr> },
 }
 
 impl TryFrom<&Token> for Expr {
@@ -76,6 +103,11 @@ impl Expr {
             Some(Token::Keyword(k)) if MathOp::try_from(&Token::Keyword(k.clone())).is_ok() => {
                 let (maths_expr, consumed) = Expr::parse_math_expr(tokens)?;
                 Ok((Expr::Math(maths_expr), consumed))
+            }
+
+            Some(Token::Keyword(k)) if BoolOp::try_from(&Token::Keyword(k.clone())).is_ok() => {
+                let (op, exprs, consumed) = Expr::parse_bool_expr(tokens)?;
+                Ok((Expr::Bool { op, args: exprs }, consumed))
             }
 
             // this is for converting single tokens to an expression
@@ -141,5 +173,61 @@ impl Expr {
             },
             3 + consumed_left + consumed_right,
         ))
+    }
+
+    fn parse_bool_expr(tokens: &[Token]) -> Result<(BoolOp, Vec<Expr>, usize), AppError> {
+        let op = BoolOp::try_from(tokens.first().ok_or(AppError::MissingExpression)?)?;
+
+        match op {
+            BoolOp::Not => {
+                // NOT only has one following expr
+                let (expr, consumed) = Expr::parse(&tokens[2..])?;
+                Ok((op, vec![expr], consumed + 1))
+            }
+            BoolOp::Both | BoolOp::Either | BoolOp::Won => {
+                // BOTH, EITHER and WON have two following expr.
+                // This is exactly the same logic in parse_maths_expr(), except here
+                // we return (BoolOp, Vec<Expr>, usize) instead of (MathsExpr, usize)
+                match tokens.get(1) {
+                    Some(Token::Keyword(Keyword::Of)) => {}
+                    _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
+                }
+
+                let (left, consumed_left) = Expr::parse(&tokens[2..])?;
+
+                match tokens.get(2 + consumed_left) {
+                    Some(Token::Keyword(Keyword::An)) => {}
+                    _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
+                }
+
+                let (right, consumed_right) = Expr::parse(&tokens[3 + consumed_left..])?;
+
+                Ok((op, vec![left, right], 3 + consumed_left + consumed_right))
+            }
+            BoolOp::All | BoolOp::Any => {
+                // ALL and ANY both have an indefinite number of exprs ending with MKAY.
+                match tokens.get(1) {
+                    Some(Token::Keyword(Keyword::Of)) => {}
+                    _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
+                }
+
+                match tokens.last() {
+                    Some(Token::Keyword(Keyword::Mkay)) => (),
+                    _ => return Err(AppError::TroofExpressionMustEndWithMkay),
+                }
+
+                let mut total_consumed = 2;
+                let mut exprs = Vec::new();
+
+                // len() - 2 because we know MKAY is at the end.
+                while total_consumed < tokens.len() - 2 {
+                    let (expr, consumed) = Expr::parse(&tokens[total_consumed..])?;
+                    exprs.push(expr);
+                    total_consumed += consumed;
+                }
+
+                Ok((op, exprs, total_consumed))
+            }
+        }
     }
 }

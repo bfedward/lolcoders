@@ -32,4 +32,13 @@ result R I IZ add YR 3 AN YR 4 MKAY
 
 VISIBLE result
 
+HOW IZ I both_win YR first AN YR second
+    FOUND YR BOTH OF first AN second
+IF U SAY SO
+
+I HAS A troof_result ITZ A TROOF
+troof_result R I IZ both_win YR WIN AN YR WIN MKAY
+
+VISIBLE troof_result
+
 KTHXBYE

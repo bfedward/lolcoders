@@ -30,6 +30,8 @@ pub enum AppError {
     CannotPerformMathsOnNoob,
     DivisionByZero,
     NumberOverflow,
+    TroofExpressionMustEndWithMkay,
+    TroofExpressionHasInvalidNumberOfArguments,
 }
 
 impl fmt::Display for AppError {
@@ -103,6 +105,12 @@ impl fmt::Display for AppError {
             }
             AppError::NumberOverflow => {
                 write!(f, "Number overflow")
+            }
+            AppError::TroofExpressionMustEndWithMkay => {
+                write!(f, "Troof expression must end with MKAY")
+            }
+            AppError::TroofExpressionHasInvalidNumberOfArguments => {
+                write!(f, "Troof expression has invalid number of arguments")
             }
         }
     }

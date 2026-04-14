@@ -2,8 +2,8 @@ use crate::expression::Expr;
 use crate::lexer::tokenize_line;
 use crate::parser::parse_line;
 
-use crate::types::eval_maths_expr;
 use crate::types::identifier::Identifier;
+use crate::types::{eval_bool_expr, eval_maths_expr};
 use crate::{
     app_error::AppError,
     types::{Statement, Value},
@@ -252,6 +252,14 @@ impl Interpreter {
                 let right = self.eval_expr(&math_expr.right)?;
 
                 eval_maths_expr(math_expr, left, right)
+            }
+            Expr::Bool { op, args } => {
+                let values: Vec<Value> = args
+                    .iter()
+                    .map(|expr| self.eval_expr(expr))
+                    .collect::<Result<Vec<Value>, AppError>>()?;
+
+                eval_bool_expr(op, values)
             }
         }
     }

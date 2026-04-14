@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     app_error::AppError,
-    expression::{Expr, MathOp, MathsExpr},
+    expression::{BoolOp, Expr, MathOp, MathsExpr},
     types::{
         identifier::Identifier,
         primitive::{Numbar, Number, Numbr, Troof, Yarn},
@@ -48,41 +48,28 @@ impl Value {
             Value::Noob => Err(AppError::CannotPerformMathsOnNoob),
         }
     }
+
+    fn as_troof(&self) -> Troof {
+        match self {
+            Value::Numbar(numbar) => numbar.clone().into(),
+            Value::Numbr(numbr) => numbr.clone().into(),
+            Value::Yarn(yarn) => yarn.clone().into(),
+            Value::Troof(troof) => troof.clone(),
+            Value::Noob => Troof::new(false),
+        }
+    }
 }
 
-fn apply_numeric_op<X, Y>(
-    left: Value,
-    right: Value,
-    int_op: X,
-    float_op: Y,
-) -> Result<Value, AppError>
-where
-    X: Fn(i64, i64) -> Option<i64>,
-    Y: Fn(f64, f64) -> f64,
-{
-    let l = left.as_number()?;
-    let r = right.as_number()?;
-
-    let result = match (l, r) {
-        (Number::Int(a), Number::Int(b)) => {
-            let res = int_op(a, b).ok_or(AppError::NumberOverflow)?;
-            Number::Int(res)
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Numbar(n) => write!(f, "{n}"),
+            Value::Numbr(n) => write!(f, "{n}"),
+            Value::Yarn(s) => write!(f, "{s}"),
+            Value::Troof(b) => write!(f, "{b}"),
+            Value::Noob => write!(f, "NOOB"),
         }
-
-        (Number::Int(a), Number::Float(b)) => {
-            Number::Float(check_float_overflow(float_op(a as f64, b))?)
-        }
-
-        (Number::Float(a), Number::Int(b)) => {
-            Number::Float(check_float_overflow(float_op(a, b as f64))?)
-        }
-
-        (Number::Float(a), Number::Float(b)) => {
-            Number::Float(check_float_overflow(float_op(a, b))?)
-        }
-    };
-
-    Ok(result.into_value())
+    }
 }
 
 pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Value, AppError> {
@@ -123,6 +110,41 @@ pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Valu
     }
 }
 
+fn apply_numeric_op<X, Y>(
+    left: Value,
+    right: Value,
+    int_op: X,
+    float_op: Y,
+) -> Result<Value, AppError>
+where
+    X: Fn(i64, i64) -> Option<i64>,
+    Y: Fn(f64, f64) -> f64,
+{
+    let l = left.as_number()?;
+    let r = right.as_number()?;
+
+    let result = match (l, r) {
+        (Number::Int(a), Number::Int(b)) => {
+            let res = int_op(a, b).ok_or(AppError::NumberOverflow)?;
+            Number::Int(res)
+        }
+
+        (Number::Int(a), Number::Float(b)) => {
+            Number::Float(check_float_overflow(float_op(a as f64, b))?)
+        }
+
+        (Number::Float(a), Number::Int(b)) => {
+            Number::Float(check_float_overflow(float_op(a, b as f64))?)
+        }
+
+        (Number::Float(a), Number::Float(b)) => {
+            Number::Float(check_float_overflow(float_op(a, b))?)
+        }
+    };
+
+    Ok(result.into_value())
+}
+
 fn check_zero(n: &Number) -> bool {
     match n {
         Number::Int(0) => true,
@@ -141,16 +163,52 @@ fn check_float_overflow(f: f64) -> Result<f64, AppError> {
     Ok(f)
 }
 
-impl fmt::Display for Value {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Value::Numbar(n) => write!(f, "{n}"),
-            Value::Numbr(n) => write!(f, "{n}"),
-            Value::Yarn(s) => write!(f, "{s}"),
-            Value::Troof(b) => write!(f, "{b}"),
-            Value::Noob => write!(f, "NOOB"),
+pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError> {
+    let expr_count = exprs.len();
+
+    match op {
+        BoolOp::Both | BoolOp::Either | BoolOp::Won => {
+            if expr_count != 2 {
+                return Err(AppError::TroofExpressionHasInvalidNumberOfArguments);
+            }
+        }
+        BoolOp::Not => {
+            if expr_count != 1 {
+                return Err(AppError::TroofExpressionHasInvalidNumberOfArguments);
+            }
+        }
+        BoolOp::All | BoolOp::Any => {
+            if expr_count == 0 {
+                return Err(AppError::TroofExpressionHasInvalidNumberOfArguments);
+            }
         }
     }
+
+    let res = match op {
+        BoolOp::Both | BoolOp::All | BoolOp::Any => {
+            if exprs.iter().all(|t| t.as_troof().value()) {
+                Troof::new(true)
+            } else {
+                Troof::new(false)
+            }
+        }
+        BoolOp::Either | BoolOp::Won => {
+            if exprs.iter().any(|t| t.as_troof().value()) {
+                Troof::new(true)
+            } else {
+                Troof::new(false)
+            }
+        }
+        BoolOp::Not => {
+            if exprs.iter().all(|t| t.as_troof().value()) {
+                Troof::new(false)
+            } else {
+                Troof::new(true)
+            }
+        }
+    };
+
+    Ok(Value::Troof(res))
 }
 
 #[derive(Debug, PartialEq, Clone)]

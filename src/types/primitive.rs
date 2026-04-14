@@ -114,6 +114,10 @@ impl Troof {
     pub fn new(v: bool) -> Self {
         Troof { value: v }
     }
+
+    pub fn value(&self) -> bool {
+        self.value
+    }
 }
 
 impl Display for Troof {
@@ -122,5 +126,47 @@ impl Display for Troof {
             true => write!(f, "WIN"),
             false => write!(f, "FAIL"),
         }
+    }
+}
+
+impl From<Numbar> for Troof {
+    fn from(value: Numbar) -> Self {
+        if value.value == 0.0 {
+            Troof::new(false)
+        } else {
+            Troof::new(true)
+        }
+    }
+}
+
+impl From<Numbr> for Troof {
+    fn from(value: Numbr) -> Self {
+        if value.value == 0 {
+            Troof::new(false)
+        } else {
+            Troof::new(true)
+        }
+    }
+}
+
+impl From<Yarn> for Troof {
+    fn from(value: Yarn) -> Self {
+        if value.value.is_empty() {
+            return Troof::new(false);
+        }
+
+        // Try integer first
+        let int: Result<Numbr, AppError> = value.clone().try_into();
+        if let Ok(int) = int {
+            return Troof::new(int.value != 0);
+        }
+
+        // Then float
+        let float: Result<Numbar, AppError> = value.clone().try_into();
+        if let Ok(float) = float {
+            return Troof::new(float.value != 0.0);
+        }
+
+        Troof::new(false)
     }
 }
