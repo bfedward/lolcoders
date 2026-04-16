@@ -41,4 +41,13 @@ troof_result R I IZ both_win YR WIN AN YR WIN MKAY
 
 VISIBLE troof_result
 
+HOW IZ I is_both_saem YR first AN YR second
+    FOUND YR BOTH SAEM first AN second
+IF U SAY SO
+
+I HAS A comp_result ITZ A TROOF
+comp_result R I IZ is_both_saem YR "1" AN YR "1" MKAY
+
+VISIBLE comp_result
+
 KTHXBYE

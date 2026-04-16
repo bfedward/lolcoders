@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     app_error::AppError,
-    expression::{BoolOp, Expr, MathOp, MathsExpr},
+    expression::{BoolOp, ComparisonExpr, ComparisonOp, Expr, MathOp, MathsExpr},
     types::{
         identifier::Identifier,
         primitive::{Numbar, Number, Numbr, Troof, Yarn},
@@ -60,6 +60,20 @@ impl Value {
     }
 }
 
+impl PartialEq for Value {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Numbar(x), Value::Numbar(y)) => x == y,
+            (Value::Numbr(x), Value::Numbr(y)) => x == y,
+            (Value::Numbar(x), Value::Numbr(y)) => x == y,
+            (Value::Numbr(x), Value::Numbar(y)) => x == y,
+            (Value::Yarn(x), Value::Yarn(y)) => x == y,
+            (Value::Troof(x), Value::Troof(y)) => x == y,
+            _ => false,
+        }
+    }
+}
+
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -70,6 +84,19 @@ impl fmt::Display for Value {
             Value::Noob => write!(f, "NOOB"),
         }
     }
+}
+
+pub fn eval_comparison_expr(
+    op: &ComparisonExpr,
+    left: Value,
+    right: Value,
+) -> Result<Value, AppError> {
+    let comp = match op.op {
+        ComparisonOp::BothSaem => left == right,
+        ComparisonOp::Diffrint => left != right,
+    };
+
+    Ok(Value::Troof(Troof::new(comp)))
 }
 
 pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Value, AppError> {

@@ -3,7 +3,7 @@ use crate::lexer::tokenize_line;
 use crate::parser::parse_line;
 
 use crate::types::identifier::Identifier;
-use crate::types::{eval_bool_expr, eval_maths_expr};
+use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
 use crate::{
     app_error::AppError,
     types::{Statement, Value},
@@ -260,6 +260,12 @@ impl Interpreter {
                     .collect::<Result<Vec<Value>, AppError>>()?;
 
                 eval_bool_expr(op, values)
+            }
+            Expr::Comparison(comparison_expr) => {
+                let left = self.eval_expr(&comparison_expr.left)?;
+                let right = self.eval_expr(&comparison_expr.right)?;
+
+                eval_comparison_expr(comparison_expr, left, right)
             }
         }
     }

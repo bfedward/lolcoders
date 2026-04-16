@@ -80,5 +80,7 @@ define_keywords! {
     Won => "WON",
     Not => "NOT",
     All => "ALL",
-    Any => "ANY"
+    Any => "ANY",
+    Saem => "SAEM",
+    Diffrint => "DIFFRINT"
 }

@@ -33,7 +33,7 @@ impl From<&Numbr> for Number {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Numbar {
     value: f64,
 }
@@ -61,7 +61,19 @@ impl TryFrom<Yarn> for Numbar {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
+impl PartialEq for Numbar {
+    fn eq(&self, other: &Numbar) -> bool {
+        self.value == other.value
+    }
+}
+
+impl PartialEq<Numbr> for Numbar {
+    fn eq(&self, other: &Numbr) -> bool {
+        self.value == other.value as f64
+    }
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Numbr {
     value: i64,
 }
@@ -85,6 +97,18 @@ impl TryFrom<Yarn> for Numbr {
 impl Display for Numbr {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
+    }
+}
+
+impl PartialEq for Numbr {
+    fn eq(&self, other: &Numbr) -> bool {
+        self.value == other.value
+    }
+}
+
+impl PartialEq<Numbar> for Numbr {
+    fn eq(&self, other: &Numbar) -> bool {
+        self.value as f64 == other.value
     }
 }
 

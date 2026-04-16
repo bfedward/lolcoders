@@ -9,6 +9,24 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum ComparisonOp {
+    BothSaem,
+    Diffrint,
+}
+
+impl TryFrom<&Token> for ComparisonOp {
+    type Error = AppError;
+
+    fn try_from(token: &Token) -> Result<Self, Self::Error> {
+        match token {
+            Token::Keyword(Keyword::Both) => Ok(ComparisonOp::BothSaem),
+            Token::Keyword(Keyword::Diffrint) => Ok(ComparisonOp::Diffrint),
+            _ => Err(AppError::InvalidExpression(Tokens(vec![token.clone()]))),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum BoolOp {
     Both,
     Either,
@@ -70,6 +88,13 @@ pub struct MathsExpr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub struct ComparisonExpr {
+    pub op: ComparisonOp,
+    pub left: Box<Expr>,
+    pub right: Box<Expr>,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
     Numbar(Numbar),
     Numbr(Numbr),
@@ -79,6 +104,7 @@ pub enum Expr {
     Noob,
     Math(MathsExpr),
     Bool { op: BoolOp, args: Vec<Expr> },
+    Comparison(ComparisonExpr),
 }
 
 impl TryFrom<&Token> for Expr {
@@ -99,15 +125,48 @@ impl TryFrom<&Token> for Expr {
 
 impl Expr {
     pub fn parse(tokens: &[Token]) -> Result<(Self, usize), AppError> {
+        // parsing is done by matching on the first token.
+        // this doesn't work for BOTH, because BOTH SAEM is a comparison expr
+        // and BOTH OF is a boolean expression.
+        match tokens {
+            [
+                Token::Keyword(Keyword::Both),
+                Token::Keyword(Keyword::Saem),
+                ..,
+            ] => {
+                let (comp_expr, consumed) = Expr::parse_comparison_expr(tokens)?;
+                return Ok((Expr::Comparison(comp_expr), consumed));
+            }
+            [
+                Token::Keyword(Keyword::Both),
+                Token::Keyword(Keyword::Of),
+                ..,
+            ] => {
+                let (op, exprs, consumed) = Expr::parse_bool_expr(tokens)?;
+                return Ok((Expr::Bool { op, args: exprs }, consumed));
+            }
+            _ => (),
+        }
+
         match tokens.first() {
+            // maths expr
             Some(Token::Keyword(k)) if MathOp::try_from(&Token::Keyword(k.clone())).is_ok() => {
                 let (maths_expr, consumed) = Expr::parse_math_expr(tokens)?;
                 Ok((Expr::Math(maths_expr), consumed))
             }
 
+            // bool expr
             Some(Token::Keyword(k)) if BoolOp::try_from(&Token::Keyword(k.clone())).is_ok() => {
                 let (op, exprs, consumed) = Expr::parse_bool_expr(tokens)?;
                 Ok((Expr::Bool { op, args: exprs }, consumed))
+            }
+
+            // comparison expr
+            Some(Token::Keyword(k))
+                if ComparisonOp::try_from(&Token::Keyword(k.clone())).is_ok() =>
+            {
+                let (comp_expr, consumed) = Expr::parse_comparison_expr(tokens)?;
+                Ok((Expr::Comparison(comp_expr), consumed))
             }
 
             // this is for converting single tokens to an expression
@@ -229,5 +288,33 @@ impl Expr {
                 Ok((op, exprs, total_consumed))
             }
         }
+    }
+
+    fn parse_comparison_expr(tokens: &[Token]) -> Result<(ComparisonExpr, usize), AppError> {
+        let op = ComparisonOp::try_from(tokens.first().ok_or(AppError::MissingExpression)?)?;
+
+        // BOTH has SAEM
+        let consume_from = match tokens.get(1) {
+            Some(Token::Keyword(Keyword::Saem)) => 2,
+            _ => 1,
+        };
+
+        let (left, consumed_left) = Expr::parse(&tokens[consume_from..])?;
+
+        match tokens.get(consume_from + consumed_left) {
+            Some(Token::Keyword(Keyword::An)) => {}
+            _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
+        }
+
+        let (right, consumed_right) = Expr::parse(&tokens[consume_from + 1 + consumed_left..])?;
+
+        Ok((
+            ComparisonExpr {
+                op,
+                left: Box::new(left),
+                right: Box::new(right),
+            },
+            consume_from + 1 + consumed_left + consumed_right,
+        ))
     }
 }
