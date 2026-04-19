@@ -94,10 +94,10 @@ impl Interpreter {
 
     fn execute_statement(&mut self, stmt: &Statement) -> Result<(), AppError> {
         match stmt {
-            Statement::Hai(version) => {
-                if let Some(version) = version {
-                    println!("Using LOLCODE v{version}")
-                }
+            Statement::Hai(_version) => {
+                // if let Some(version) = version {
+                //     println!("Using LOLCODE v{version}")
+                // }
             }
             Statement::Visible(expr) => {
                 let value = self.eval_expr(expr)?;
