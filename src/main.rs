@@ -7,14 +7,39 @@ mod parser;
 mod types;
 
 use interpreter::Interpreter;
-use std::fs;
+use std::{env, fs, path::Path};
 
 fn main() {
-    let source = fs::read_to_string("program.lol").expect("Failed to read file");
+    let args = env::args().skip(1);
 
-    let mut interpreter = Interpreter::new();
-    match interpreter.execute_source(source) {
-        Ok(_) => (),
-        Err(e) => println!("{e}"),
+    if args.len() == 0 {
+        eprintln!("Usage: lcr <file1.lol> [file2.lol ...]");
+        std::process::exit(1);
+    }
+
+    for filename in args {
+        // Check extension
+        if Path::new(&filename)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            != Some("lol")
+        {
+            eprintln!("Error: '{}' is not a .lol file", filename);
+            continue;
+        }
+
+        let source = match fs::read_to_string(&filename) {
+            Ok(s) => s,
+            Err(e) => {
+                eprintln!("Failed to read '{}': {}", filename, e);
+                continue;
+            }
+        };
+
+        let mut interpreter = Interpreter::new();
+
+        if let Err(e) = interpreter.execute_source(source) {
+            eprintln!("Error in '{}': {}", filename, e);
+        }
     }
 }
