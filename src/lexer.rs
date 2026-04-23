@@ -37,6 +37,117 @@ impl fmt::Display for Tokens {
     }
 }
 
+pub fn normalise_source(source: String) -> String {
+    // dbg!(&source);
+    let mut result = String::new();
+    let mut current_line = String::new();
+
+    let mut in_string = false;
+    let mut in_comment = false;
+
+    let mut chars = source.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        match c {
+            '"' => {
+                if !in_comment {
+                    in_string = !in_string;
+                    current_line.push(c);
+                }
+            }
+            '\n' if !in_string && !in_comment => {
+                if current_line.ends_with("...") && !in_comment {
+                    current_line.push(' ');
+                } else {
+                    in_comment = false;
+                    result.push_str(&current_line);
+                    result.push(c);
+                    current_line.clear();
+                }
+            }
+            '\n' if in_comment => {
+                in_comment = false;
+                result.push(c);
+            }
+            ',' if !in_string && !in_comment => {
+                result.push_str(&current_line);
+                current_line.clear();
+            }
+            '\t' if !in_string && !in_comment => {
+                current_line.push_str("    ");
+            }
+            'B' if !in_string && !in_comment => {
+                if chars.peek() == Some(&'T') {
+                    let mut clone = chars.clone();
+                    clone.next(); // T
+                    if clone.peek() == Some(&'W') {
+                        chars.next();
+                        chars.next();
+                        result.push_str(&current_line);
+                        current_line.clear();
+                        in_comment = true;
+                    }
+                } else {
+                    current_line.push(c);
+                }
+            }
+            _ => {
+                if !in_comment {
+                    current_line.push(c);
+                }
+            }
+        }
+        // dbg!(&current_line);
+    }
+
+    // dbg!(&result);
+
+    remove_commentary(result)
+}
+
+fn remove_commentary(source: String) -> String {
+    let mut result = String::new();
+
+    for line in source.lines() {
+        let mut new_line = String::new();
+        let mut in_string = false;
+
+        let mut chars = line.chars().peekable();
+
+        while let Some(c) = chars.next() {
+            match c {
+                '"' => {
+                    in_string = !in_string;
+                    new_line.push(c);
+                }
+
+                // BTW
+                'B' if !in_string => {
+                    if chars.peek() == Some(&'T') {
+                        let mut clone = chars.clone();
+                        clone.next(); // T
+                        if clone.peek() == Some(&'W') {
+                            chars.next();
+                            chars.next();
+                            break;
+                        }
+                    }
+                    new_line.push(c);
+                }
+
+                _ => new_line.push(c),
+            }
+        }
+
+        if !new_line.trim().is_empty() {
+            result.push_str(new_line.trim_end());
+            result.push('\n');
+        }
+    }
+
+    result
+}
+
 pub fn tokenize_line(line: &str) -> Result<Vec<Token>, AppError> {
     let raw_tokens = split_line(line);
 
@@ -59,7 +170,7 @@ fn split_line(line: &str) -> Vec<String> {
                 in_string = !in_string;
                 current.push(c);
             }
-            ' ' if !in_string => {
+            ' ' | '\t' if !in_string => {
                 if !current.is_empty() {
                     raw_tokens.push(current.clone());
                     current.clear();

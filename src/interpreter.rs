@@ -1,5 +1,5 @@
 use crate::expression::Expr;
-use crate::lexer::tokenize_line;
+use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
 
 use crate::types::identifier::Identifier;
@@ -46,7 +46,9 @@ impl Interpreter {
     }
 
     pub fn execute_source(&mut self, source: String) -> Result<(), AppError> {
-        let mut lines = source.lines().peekable();
+        let normalised_source = normalise_source(source);
+        // dbg!(&normalised_source);
+        let mut lines = normalised_source.lines().peekable();
         let mut statements = Vec::new();
 
         while let Some(line) = lines.next() {

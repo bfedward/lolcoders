@@ -25,14 +25,14 @@ fn main() {
             != Some("lol")
         {
             eprintln!("Error: '{}' is not a .lol file", filename);
-            continue;
+            std::process::exit(1);
         }
 
         let source = match fs::read_to_string(&filename) {
             Ok(s) => s,
             Err(e) => {
                 eprintln!("Failed to read '{}': {}", filename, e);
-                continue;
+                std::process::exit(1);
             }
         };
 
@@ -40,6 +40,7 @@ fn main() {
 
         if let Err(e) = interpreter.execute_source(source) {
             eprintln!("Error in '{}': {}", filename, e);
+            std::process::exit(1);
         }
     }
 }

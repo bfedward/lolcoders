@@ -55,8 +55,6 @@ fn run_lci_tests() {
     let mut results = Vec::new();
     let mut executed = 0;
 
-    dbg!(&config);
-
     for dir in test_dirs {
         let path_str = dir.to_string_lossy().to_string();
         let case = dir.file_name().unwrap().to_string_lossy().to_string();
