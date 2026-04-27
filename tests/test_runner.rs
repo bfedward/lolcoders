@@ -5,6 +5,8 @@ use std::process::Command;
 // To run a specific group of tests: LCR_GROUPS=3-Types cargo test
 // To run multiple groups: LCR_GROUPS=3-Types,10-Loops cargo test
 
+// With passes: LCR_GROUPS=2-Comments LCR_VERBOSE=1 cargo test -- --nocapture
+
 struct TestResult {
     path: String,
     case: String,

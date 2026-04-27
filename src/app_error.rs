@@ -32,6 +32,9 @@ pub enum AppError {
     NumberOverflow,
     TroofExpressionMustEndWithMkay,
     TroofExpressionHasInvalidNumberOfArguments,
+    ObtwMustStartLine,
+    TldrMustEndLine,
+    TldrMustBeAfterObtw,
 }
 
 impl fmt::Display for AppError {
@@ -111,6 +114,15 @@ impl fmt::Display for AppError {
             }
             AppError::TroofExpressionHasInvalidNumberOfArguments => {
                 write!(f, "Troof expression has invalid number of arguments")
+            }
+            AppError::ObtwMustStartLine => {
+                write!(f, "OBTW must start a line")
+            }
+            AppError::TldrMustEndLine => {
+                write!(f, "TLDR must end a line")
+            }
+            AppError::TldrMustBeAfterObtw => {
+                write!(f, "TLDR must be after OBTW")
             }
         }
     }
