@@ -7,6 +7,7 @@ use crate::{
 
 pub enum AppError {
     HaiMustBeFirstLine,
+    MustGiveVersionNumberInHaiLine,
     KThxByeMustBeLastLine,
     VariableDoesNotExist(Identifier),
     FunctionDoesNotExist(Identifier),
@@ -35,12 +36,16 @@ pub enum AppError {
     ObtwMustStartLine,
     TldrMustEndLine,
     TldrMustBeAfterObtw,
+    QuestionMarkIsNotAnExpression,
 }
 
 impl fmt::Display for AppError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             AppError::HaiMustBeFirstLine => write!(f, "Must start with HAI"),
+            AppError::MustGiveVersionNumberInHaiLine => {
+                write!(f, "Must give version number in HAI line")
+            }
             AppError::KThxByeMustBeLastLine => write!(f, "Must end with KTHXBYE"),
             AppError::VariableDoesNotExist(var) => {
                 write!(f, "Variable {var} does not exist in current scope")
@@ -123,6 +128,9 @@ impl fmt::Display for AppError {
             }
             AppError::TldrMustBeAfterObtw => {
                 write!(f, "TLDR must be after OBTW")
+            }
+            AppError::QuestionMarkIsNotAnExpression => {
+                write!(f, "Question mark is not an expression")
             }
         }
     }

@@ -19,10 +19,17 @@ pub fn parse_line(
     }
 
     match tokens {
-        [Token::Keyword(Keyword::Hai)] => Ok(Some(Statement::Hai(None))),
+        [Token::Keyword(Keyword::Hai)] => Err(AppError::MustGiveVersionNumberInHaiLine),
+
+        [
+            Token::Keyword(Keyword::Can),
+            Token::Keyword(Keyword::Has),
+            Token::Identifier(lib),
+            Token::QuestionMark,
+        ] => Ok(Some(Statement::CanHasLib(lib.clone()))),
 
         [Token::Keyword(Keyword::Hai), Token::Numbar(version)] => {
-            Ok(Some(Statement::Hai(Some(*version))))
+            Ok(Some(Statement::Hai(*version)))
         }
 
         [Token::Keyword(Keyword::Visible), rest @ ..] => {

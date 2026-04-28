@@ -83,5 +83,6 @@ define_keywords! {
     Any => "ANY",
     Saem => "SAEM",
     Diffrint => "DIFFRINT",
-    Btw => "BTW"
+    Btw => "BTW",
+    Can => "CAN",
 }

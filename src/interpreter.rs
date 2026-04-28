@@ -100,6 +100,9 @@ impl Interpreter {
                 //     println!("Using LOLCODE v{version}")
                 // }
             }
+            Statement::CanHasLib(_) => {
+                // this is future lolcode functionality.
+            }
             Statement::Visible(expr) => {
                 let value = self.eval_expr(expr)?;
                 println!("{}", value);

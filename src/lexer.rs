@@ -11,6 +11,7 @@ pub enum Token {
     Numbar(f64),
     Troof(bool),
     Noob,
+    QuestionMark,
 }
 
 impl fmt::Display for Token {
@@ -23,6 +24,7 @@ impl fmt::Display for Token {
             Token::Numbar(n) => write!(f, "{n}"),
             Token::Troof(b) => write!(f, "{}", if *b { "WIN" } else { "FAIL" }),
             Token::Noob => write!(f, "NOOB"),
+            Token::QuestionMark => write!(f, "?"),
         }
     }
 }
@@ -45,6 +47,9 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
     let mut in_string = false;
     let mut in_btw_comment = false;
     let mut in_obtw_comment = false;
+
+    // let source = source.replace('\r', "");
+    // let source = source.replace('\t', "");
 
     let mut chars = source.chars().peekable();
 
@@ -76,11 +81,16 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                 current_line.clear();
             }
             '\t' if !in_string && !in_btw_comment => {
-                current_line.push_str("    ");
+                // current_line.push_str("    ");
+            }
+            '\r' if !in_string && !in_btw_comment => {
+                // current_line.push_str("    ");
+                current_line.push('\n');
+                result.push_str(&current_line);
+                current_line.clear();
             }
             // BTW
             'B' if !in_string && !in_btw_comment && !in_obtw_comment => {
-                dbg!('B');
                 dbg!(in_obtw_comment);
                 if chars.peek() == Some(&'T') {
                     let mut clone = chars.clone();
@@ -99,24 +109,18 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
             }
             // OBTW
             'O' if !in_string && !in_btw_comment && !in_obtw_comment => {
-                dbg!('O');
                 if chars.peek() == Some(&'B') {
-                    dbg!('B');
                     let mut clone = chars.clone();
                     clone.next(); // B
                     if clone.peek() == Some(&'T') {
-                        dbg!('T');
                         clone.next(); // T
                         if clone.peek() == Some(&'W') {
-                            dbg!('W');
                             chars.next(); // W
                             chars.next();
                             chars.next();
                             current_line.push_str("OBTW");
                             in_obtw_comment = true;
                             dbg!(in_obtw_comment);
-                        } else {
-                            dbg!("No W");
                         }
                     }
                 } else {
@@ -140,6 +144,18 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                     }
                 }
             }
+            // '.' if !in_string && !in_btw_comment && !in_obtw_comment => {
+            //     if chars.peek() == Some(&'.') {
+            //         let mut clone = chars.clone();
+            //         clone.next(); // second .
+            //         if clone.peek() == Some(&'.') {
+            //             clone.next();
+            //         }
+            //     }
+            // }
+            // '?' if !in_string && !in_btw_comment && !in_obtw_comment => {
+            //     current_line.push_str(" ?");
+            // }
             _ => {
                 if !in_btw_comment {
                     current_line.push(c);
@@ -150,6 +166,7 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
     }
 
     dbg!(&result);
+    result = result.replace("\"... \"", "");
 
     remove_commentary(result)
 }
@@ -222,8 +239,6 @@ fn remove_commentary(source: String) -> Result<String, AppError> {
                                 }
 
                                 in_obtw = true;
-
-
                             }
                         }
                     }
@@ -302,10 +317,11 @@ fn remove_commentary(source: String) -> Result<String, AppError> {
 pub fn tokenize_line(line: &str) -> Result<Vec<Token>, AppError> {
     let raw_tokens = split_line(line);
 
-    let tokens = raw_tokens
-        .into_iter()
-        .map(classify_token)
-        .collect::<Result<Vec<Token>, AppError>>()?;
+    let mut tokens = Vec::new();
+
+    for word in raw_tokens {
+        tokens.extend(classify_token(word)?);
+    }
 
     Ok(tokens)
 }
@@ -338,33 +354,57 @@ fn split_line(line: &str) -> Vec<String> {
     raw_tokens
 }
 
-fn classify_token(word: String) -> Result<Token, AppError> {
+fn classify_token(word: String) -> Result<Vec<Token>, AppError> {
     if word.starts_with('"') && word.ends_with('"') {
-        return Ok(Token::Yarn(word.trim_matches('"').to_string()));
+        return Ok(vec![Token::Yarn(word.trim_matches('"').to_string())]);
     }
 
     if word == "WIN" {
-        return Ok(Token::Troof(true));
+        return Ok(vec![Token::Troof(true)]);
     }
     if word == "FAIL" {
-        return Ok(Token::Troof(false));
+        return Ok(vec![Token::Troof(false)]);
     }
 
     if word == "NOOB" {
-        return Ok(Token::Noob);
+        return Ok(vec![Token::Noob]);
     }
 
     if let Ok(n) = word.parse::<i64>() {
-        return Ok(Token::Numbr(n));
+        return Ok(vec![Token::Numbr(n)]);
     }
 
     if let Ok(n) = word.parse::<f64>() {
-        return Ok(Token::Numbar(n));
+        return Ok(vec![Token::Numbar(n)]);
     }
 
     if let Some(keyword) = Keyword::from_str(&word) {
-        return Ok(Token::Keyword(keyword));
+        return Ok(vec![Token::Keyword(keyword)]);
     }
 
-    Ok(Token::Identifier(Identifier::new(word)?))
+    let count_qmark = {
+        let mut count = 0;
+        for c in word.chars() {
+            if c == '?' {
+                count += 1;
+            }
+        }
+        count
+    };
+
+    dbg!(&word);
+
+    if word.len() == 1 && count_qmark == 1 {
+        return Ok(vec![Token::QuestionMark]);
+    }
+
+    if count_qmark == 1 && word.ends_with('?') {
+        let word = word.replace("?", "");
+        return Ok(vec![
+            Token::Identifier(Identifier::new(word)?),
+            Token::QuestionMark,
+        ]);
+    }
+
+    Ok(vec![Token::Identifier(Identifier::new(word)?)])
 }

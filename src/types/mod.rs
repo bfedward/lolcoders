@@ -240,7 +240,7 @@ pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError>
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
-    Hai(Option<f64>),
+    Hai(f64),
     Visible(Expr),
     IHasA(Identifier, Expr),
     HowIzI(Identifier, Vec<Identifier>, Vec<Statement>),
@@ -249,4 +249,5 @@ pub enum Statement {
     FoundYr(Expr),
     Gtfo,
     KThxBye,
+    CanHasLib(Identifier),
 }
