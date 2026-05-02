@@ -68,6 +68,15 @@ impl Interpreter {
             // }
         }
 
+        if let Some(first) = statements.first()
+            && !matches!(first, Statement::Hai(_)) {
+                return Err(AppError::HaiMustBeFirstLine);
+            }
+        
+        if let Some(last) = statements.last() && !matches!(last, Statement::KThxBye) {
+            return Err(AppError::KThxByeMustBeLastLine)
+        }
+
         for (i, statement) in statements.iter().enumerate() {
             if matches!(statement, Statement::Hai(_)) && i != 0 {
                 return Err(AppError::HaiMustBeFirstLine);

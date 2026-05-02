@@ -40,7 +40,6 @@ impl fmt::Display for Tokens {
 }
 
 pub fn normalise_source(source: String) -> Result<String, AppError> {
-    dbg!(&source);
     let mut result = String::new();
     let mut current_line = String::new();
 
@@ -48,21 +47,23 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
     let mut in_btw_comment = false;
     let mut in_obtw_comment = false;
 
-    // let source = source.replace('\r', "");
-    // let source = source.replace('\t', "");
+    let source = source
+        .replace("\r\n", "\n")
+        .replace('\r', "\n");
 
     let mut chars = source.chars().peekable();
 
     while let Some(c) = chars.next() {
         match c {
             '"' => {
-                if !in_btw_comment {
+                if !in_btw_comment && !in_obtw_comment {
                     in_string = !in_string;
                     current_line.push(c);
                 }
             }
-            '\n' if !in_string && !in_btw_comment => {
+            '\n' if !in_string && !in_btw_comment && !in_obtw_comment => {
                 if current_line.ends_with("...") && !in_btw_comment {
+                    current_line.truncate(current_line.len() - 3);
                     current_line.push(' ');
                 } else {
                     in_btw_comment = false;
@@ -71,27 +72,20 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                     current_line.clear();
                 }
             }
-            '\n' if in_btw_comment => {
+            '\n' if in_btw_comment && !in_obtw_comment => {
                 in_btw_comment = false;
                 result.push(c);
             }
-            ',' if !in_string && !in_btw_comment => {
+            ',' if !in_string && !in_btw_comment && !in_obtw_comment => {
                 current_line.push('\n');
                 result.push_str(&current_line);
                 current_line.clear();
             }
-            '\t' if !in_string && !in_btw_comment => {
-                // current_line.push_str("    ");
-            }
-            '\r' if !in_string && !in_btw_comment => {
-                // current_line.push_str("    ");
-                current_line.push('\n');
-                result.push_str(&current_line);
-                current_line.clear();
+            '\t' if !in_string && !in_btw_comment && !in_obtw_comment => {
+                current_line.push(' ');
             }
             // BTW
             'B' if !in_string && !in_btw_comment && !in_obtw_comment => {
-                dbg!(in_obtw_comment);
                 if chars.peek() == Some(&'T') {
                     let mut clone = chars.clone();
                     clone.next(); // T
@@ -101,7 +95,6 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                         result.push_str(&current_line);
                         current_line.clear();
                         in_btw_comment = true;
-                        dbg!(in_btw_comment);
                     }
                 } else {
                     current_line.push(c);
@@ -120,7 +113,6 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                             chars.next();
                             current_line.push_str("OBTW");
                             in_obtw_comment = true;
-                            dbg!(in_obtw_comment);
                         }
                     }
                 } else {
@@ -144,35 +136,20 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                     }
                 }
             }
-            // '.' if !in_string && !in_btw_comment && !in_obtw_comment => {
-            //     if chars.peek() == Some(&'.') {
-            //         let mut clone = chars.clone();
-            //         clone.next(); // second .
-            //         if clone.peek() == Some(&'.') {
-            //             clone.next();
-            //         }
-            //     }
-            // }
-            // '?' if !in_string && !in_btw_comment && !in_obtw_comment => {
-            //     current_line.push_str(" ?");
-            // }
             _ => {
                 if !in_btw_comment {
                     current_line.push(c);
                 }
             }
         }
-        dbg!(&current_line);
     }
 
-    dbg!(&result);
-    result = result.replace("\"... \"", "");
+    result.push_str(&current_line);
 
-    remove_commentary(result)
+    remove_obtw_commentary(result)
 }
 
-fn remove_commentary(source: String) -> Result<String, AppError> {
-    dbg!(&source);
+fn remove_obtw_commentary(source: String) -> Result<String, AppError> {
     let mut result = String::new();
 
     let mut in_obtw = false;
@@ -195,7 +172,6 @@ fn remove_commentary(source: String) -> Result<String, AppError> {
             return Err(AppError::TldrMustEndLine);
         }
 
-        dbg!(&line);
         // the end of the first token
         let mut new_line = String::new();
         let mut in_string = false;
@@ -248,21 +224,15 @@ fn remove_commentary(source: String) -> Result<String, AppError> {
                 }
 
                 'T' if !in_string => {
-                    dbg!('T');
                     if chars.peek() == Some(&'L') {
-                        dbg!('L');
                         let mut clone = chars.clone();
                         clone.next(); // L
                         if clone.peek() == Some(&'D') {
-                            dbg!('D');
                             clone.next(); // D
                             if clone.peek() == Some(&'R') {
-                                dbg!('R');
                                 chars.next(); // R
                                 chars.next();
                                 chars.next();
-
-                                dbg!(first_token);
 
                                 if !in_obtw {
                                     return Err(AppError::TldrMustBeAfterObtw);
@@ -274,7 +244,6 @@ fn remove_commentary(source: String) -> Result<String, AppError> {
                         }
                     }
                     if !in_obtw && !just_left_obtw {
-                        dbg!("Pushing T");
                         new_line.push(c);
                     }
                     if just_left_obtw {
@@ -305,11 +274,7 @@ fn remove_commentary(source: String) -> Result<String, AppError> {
             result.push_str(new_line.trim_end());
             result.push('\n');
         }
-
-        dbg!(&new_line);
     }
-
-    dbg!(&result);
 
     Ok(result)
 }
@@ -323,7 +288,26 @@ pub fn tokenize_line(line: &str) -> Result<Vec<Token>, AppError> {
         tokens.extend(classify_token(word)?);
     }
 
-    Ok(tokens)
+    Ok(concat_adjacent_yarns(tokens))
+}
+
+fn concat_adjacent_yarns(tokens: Vec<Token>) -> Vec<Token> {
+    let mut result = Vec::new();
+
+    for token in tokens {
+        match token {
+            Token::Yarn(s) => {
+                if let Some(Token::Yarn(prev)) = result.last_mut() {
+                    prev.push_str(&s);
+                } else {
+                    result.push(Token::Yarn(s));
+                }
+            }
+            other => result.push(other),
+        }
+    }
+
+    result
 }
 
 fn split_line(line: &str) -> Vec<String> {
@@ -391,8 +375,6 @@ fn classify_token(word: String) -> Result<Vec<Token>, AppError> {
         }
         count
     };
-
-    dbg!(&word);
 
     if word.len() == 1 && count_qmark == 1 {
         return Ok(vec![Token::QuestionMark]);
