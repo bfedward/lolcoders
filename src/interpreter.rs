@@ -117,6 +117,9 @@ impl Interpreter {
             }
             Statement::Visible(expr) => {
                 let value = self.eval_expr(expr)?;
+                if matches!(value, Value::Noob) {
+                    return Err(AppError::CannotVisibleANoob);
+                }
                 println!("{}", value);
             }
             Statement::IHasA(var_name, expr) => {

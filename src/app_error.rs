@@ -14,7 +14,7 @@ pub enum AppError {
     NotEnoughArgsForFunction,
     InvalidIdentifier(String),
     TokenCannotBeExpression(Token),
-    MissingExpression,
+    MissingExpression(Tokens),
     CouldNotGetCurrentVariableScope,
     CannotReturnFromFunctionOutsideFunction,
     FunctionMustEndIfUSaySo,
@@ -36,6 +36,7 @@ pub enum AppError {
     TldrMustEndLine,
     TldrMustBeAfterObtw,
     QuestionMarkIsNotAnExpression,
+    CannotVisibleANoob
 }
 
 impl fmt::Display for AppError {
@@ -59,8 +60,8 @@ impl fmt::Display for AppError {
             AppError::TokenCannotBeExpression(token) => {
                 write!(f, "Token {token} cannot be expression")
             }
-            AppError::MissingExpression => {
-                write!(f, "Missing expression")
+            AppError::MissingExpression(tokens) => {
+                write!(f, "Missing expression: {tokens}")
             }
             AppError::CouldNotGetCurrentVariableScope => {
                 write!(f, "Could not get current variable scope")
@@ -127,6 +128,9 @@ impl fmt::Display for AppError {
             }
             AppError::QuestionMarkIsNotAnExpression => {
                 write!(f, "Question mark is not an expression")
+            }
+            AppError::CannotVisibleANoob => {
+                write!(f, "Cannot VISIBLE a NOOB")
             }
         }
     }

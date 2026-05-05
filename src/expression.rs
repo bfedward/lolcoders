@@ -173,13 +173,13 @@ impl Expr {
             // this is for converting single tokens to an expression
             Some(token) => Ok((Expr::try_from(token)?, 1)),
 
-            None => Err(AppError::MissingExpression),
+            None => Err(AppError::MissingExpression(Tokens(tokens.to_vec()))),
         }
     }
 
     fn parse_math_expr(tokens: &[Token]) -> Result<(MathsExpr, usize), AppError> {
         // which maths op are we doing?
-        let op = MathOp::try_from(tokens.first().ok_or(AppError::MissingExpression)?)?;
+        let op = MathOp::try_from(tokens.first().ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?)?;
 
         // Check that OF comes after the maths expression (e.g. "SUM")
         match tokens.get(1) {
@@ -236,7 +236,7 @@ impl Expr {
     }
 
     fn parse_bool_expr(tokens: &[Token]) -> Result<(BoolOp, Vec<Expr>, usize), AppError> {
-        let op = BoolOp::try_from(tokens.first().ok_or(AppError::MissingExpression)?)?;
+        let op = BoolOp::try_from(tokens.first().ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?)?;
 
         match op {
             BoolOp::Not => {
@@ -292,7 +292,7 @@ impl Expr {
     }
 
     fn parse_comparison_expr(tokens: &[Token]) -> Result<(ComparisonExpr, usize), AppError> {
-        let op = ComparisonOp::try_from(tokens.first().ok_or(AppError::MissingExpression)?)?;
+        let op = ComparisonOp::try_from(tokens.first().ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?)?;
 
         // BOTH has SAEM
         let consume_from = match tokens.get(1) {
