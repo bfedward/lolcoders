@@ -44,7 +44,10 @@ impl Value {
                 Err(AppError::YarnIsNotANumber(y.clone()))
             }
 
-            Value::Troof(_) => Err(AppError::CannotPerformMathsOnTroof),
+            Value::Troof(t) => match t.value() {
+                true => Ok(Number::Int(1)),
+                false => Ok(Number::Int(0)),
+            },
             Value::Noob => Err(AppError::CannotPerformMathsOnNoob),
         }
     }

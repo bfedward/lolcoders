@@ -29,7 +29,7 @@ pub fn parse_line(
         ] => Ok(Some(Statement::CanHasLib(lib.clone()))),
 
         [Token::Keyword(Keyword::Hai), Token::Numbar(version)] => {
-            Ok(Some(Statement::Hai(*version)))
+            Ok(Some(Statement::Hai(version.value())))
         }
 
         [Token::Keyword(Keyword::Visible), rest @ ..] => {

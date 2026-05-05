@@ -27,7 +27,6 @@ pub enum AppError {
     YarnIsNotANumbar(Yarn),
     YarnIsNotANumbr(Yarn),
     YarnIsNotANumber(Yarn),
-    CannotPerformMathsOnTroof,
     CannotPerformMathsOnNoob,
     DivisionByZero,
     NumberOverflow,
@@ -101,9 +100,6 @@ impl fmt::Display for AppError {
             }
             AppError::YarnIsNotANumber(yarn) => {
                 write!(f, "YARN \"{yarn}\" is not a number")
-            }
-            AppError::CannotPerformMathsOnTroof => {
-                write!(f, "Cannot perform maths expressions with TROOF")
             }
             AppError::CannotPerformMathsOnNoob => {
                 write!(f, "Cannot perform maths expressions with NOOB")

@@ -112,10 +112,10 @@ impl TryFrom<&Token> for Expr {
 
     fn try_from(token: &Token) -> Result<Self, AppError> {
         match token {
-            Token::Numbar(n) => Ok(Expr::Numbar(Numbar::new(*n))),
-            Token::Numbr(n) => Ok(Expr::Numbr(Numbr::new(*n))),
-            Token::Yarn(s) => Ok(Expr::Yarn(Yarn::new(s.clone()))),
-            Token::Troof(b) => Ok(Expr::Troof(Troof::new(*b))),
+            Token::Numbar(n) => Ok(Expr::Numbar(n.clone())),
+            Token::Numbr(n) => Ok(Expr::Numbr(n.clone())),
+            Token::Yarn(s) => Ok(Expr::Yarn(s.clone())),
+            Token::Troof(b) => Ok(Expr::Troof(b.clone())),
             Token::Noob => Ok(Expr::Noob),
             Token::Identifier(ident) => Ok(Expr::Variable(ident.clone())),
             Token::Keyword(_) => Err(AppError::TokenCannotBeExpression(token.clone())),

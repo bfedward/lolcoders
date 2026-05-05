@@ -42,11 +42,15 @@ impl Numbar {
     pub fn new(v: f64) -> Self {
         Numbar { value: v }
     }
+
+    pub fn value(&self) -> f64 {
+        self.value
+    }
 }
 
 impl Display for Numbar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "{:.2}", f64::trunc(self.value * 100.0) / 100.0)
     }
 }
 
@@ -119,7 +123,52 @@ pub struct Yarn {
 
 impl Yarn {
     pub fn new(v: String) -> Self {
-        Yarn { value: v }
+        let v = if v.starts_with('"') && v.ends_with('"') && v.len() >= 2 {
+            &v[1..v.len() - 1]
+        } else {
+            &v
+        };
+
+        let mut chars = v.chars().peekable();
+        let mut result = String::new();
+
+        while let Some(c) = chars.next() {
+            if c == ':' {
+                match chars.peek() {
+                    Some(')') => {
+                        chars.next();
+                        result.push('\n');
+                    }
+                    Some('>') => {
+                        chars.next();
+                        result.push('\t');
+                    }
+                    Some('o') => {
+                        chars.next();
+                        result.push('\x07');
+                    }
+                    Some('"') => {
+                        chars.next();
+                        result.push('"');
+                    }
+                    Some(':') => {
+                        chars.next();
+                        result.push(':');
+                    }
+                    _ => {
+                        result.push(':');
+                    }
+                }
+            } else {
+                result.push(c);
+            }
+        }
+
+        Yarn { value: result }
+    }
+
+    pub fn concat(&mut self, other: Yarn) {
+        self.value.push_str(&other.value);
     }
 }
 

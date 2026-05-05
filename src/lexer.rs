@@ -1,15 +1,22 @@
 use std::fmt;
 
-use crate::{app_error::AppError, keywords::Keyword, types::identifier::Identifier};
+use crate::{
+    app_error::AppError,
+    keywords::Keyword,
+    types::{
+        identifier::Identifier,
+        primitive::{Numbar, Numbr, Troof, Yarn},
+    },
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Token {
     Keyword(Keyword),
     Identifier(Identifier),
-    Yarn(String),
-    Numbr(i64),
-    Numbar(f64),
-    Troof(bool),
+    Yarn(Yarn),
+    Numbr(Numbr),
+    Numbar(Numbar),
+    Troof(Troof),
     Noob,
     QuestionMark,
 }
@@ -22,7 +29,7 @@ impl fmt::Display for Token {
             Token::Yarn(s) => write!(f, "\"{s}\""),
             Token::Numbr(n) => write!(f, "{n}"),
             Token::Numbar(n) => write!(f, "{n}"),
-            Token::Troof(b) => write!(f, "{}", if *b { "WIN" } else { "FAIL" }),
+            Token::Troof(b) => write!(f, "{}", if b.value() { "WIN" } else { "FAIL" }),
             Token::Noob => write!(f, "NOOB"),
             Token::QuestionMark => write!(f, "?"),
         }
@@ -47,9 +54,7 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
     let mut in_btw_comment = false;
     let mut in_obtw_comment = false;
 
-    let source = source
-        .replace("\r\n", "\n")
-        .replace('\r', "\n");
+    let source = source.replace("\r\n", "\n").replace('\r', "\n");
 
     let mut chars = source.chars().peekable();
 
@@ -298,7 +303,7 @@ fn concat_adjacent_yarns(tokens: Vec<Token>) -> Vec<Token> {
         match token {
             Token::Yarn(s) => {
                 if let Some(Token::Yarn(prev)) = result.last_mut() {
-                    prev.push_str(&s);
+                    prev.concat(s);
                 } else {
                     result.push(Token::Yarn(s));
                 }
@@ -340,14 +345,14 @@ fn split_line(line: &str) -> Vec<String> {
 
 fn classify_token(word: String) -> Result<Vec<Token>, AppError> {
     if word.starts_with('"') && word.ends_with('"') {
-        return Ok(vec![Token::Yarn(word.trim_matches('"').to_string())]);
+        return Ok(vec![Token::Yarn(Yarn::new(word))]);
     }
 
     if word == "WIN" {
-        return Ok(vec![Token::Troof(true)]);
+        return Ok(vec![Token::Troof(Troof::new(true))]);
     }
     if word == "FAIL" {
-        return Ok(vec![Token::Troof(false)]);
+        return Ok(vec![Token::Troof(Troof::new(false))]);
     }
 
     if word == "NOOB" {
@@ -355,11 +360,11 @@ fn classify_token(word: String) -> Result<Vec<Token>, AppError> {
     }
 
     if let Ok(n) = word.parse::<i64>() {
-        return Ok(vec![Token::Numbr(n)]);
+        return Ok(vec![Token::Numbr(Numbr::new(n))]);
     }
 
     if let Ok(n) = word.parse::<f64>() {
-        return Ok(vec![Token::Numbar(n)]);
+        return Ok(vec![Token::Numbar(Numbar::new(n))]);
     }
 
     if let Some(keyword) = Keyword::from_str(&word) {
