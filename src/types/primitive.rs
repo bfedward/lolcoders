@@ -191,6 +191,10 @@ impl Troof {
     pub fn value(&self) -> bool {
         self.value
     }
+
+    pub fn flip_value(&mut self) {
+        self.value = !self.value
+    }
 }
 
 impl Display for Troof {
@@ -240,6 +244,6 @@ impl From<Yarn> for Troof {
             return Troof::new(float.value != 0.0);
         }
 
-        Troof::new(false)
+        Troof::new(true)
     }
 }

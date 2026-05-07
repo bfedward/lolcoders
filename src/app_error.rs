@@ -36,7 +36,7 @@ pub enum AppError {
     TldrMustEndLine,
     TldrMustBeAfterObtw,
     QuestionMarkIsNotAnExpression,
-    CannotVisibleANoob
+    CannotVisibleANoob,
 }
 
 impl fmt::Display for AppError {

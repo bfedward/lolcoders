@@ -105,6 +105,7 @@ pub enum Expr {
     Math(MathsExpr),
     Bool { op: BoolOp, args: Vec<Expr> },
     Comparison(ComparisonExpr),
+    Negation(Box<Expr>),
 }
 
 impl TryFrom<&Token> for Expr {
@@ -146,6 +147,10 @@ impl Expr {
                 let (op, exprs, consumed) = Expr::parse_bool_expr(tokens)?;
                 return Ok((Expr::Bool { op, args: exprs }, consumed));
             }
+            [Token::Keyword(Keyword::Not), rest @ ..] => {
+                let (rest, consumed) = Expr::parse(rest)?;
+                return Ok((Expr::Negation(Box::new(rest)), consumed));
+            }
             _ => (),
         }
 
@@ -179,7 +184,11 @@ impl Expr {
 
     fn parse_math_expr(tokens: &[Token]) -> Result<(MathsExpr, usize), AppError> {
         // which maths op are we doing?
-        let op = MathOp::try_from(tokens.first().ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?)?;
+        let op = MathOp::try_from(
+            tokens
+                .first()
+                .ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?,
+        )?;
 
         // Check that OF comes after the maths expression (e.g. "SUM")
         match tokens.get(1) {
@@ -236,7 +245,11 @@ impl Expr {
     }
 
     fn parse_bool_expr(tokens: &[Token]) -> Result<(BoolOp, Vec<Expr>, usize), AppError> {
-        let op = BoolOp::try_from(tokens.first().ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?)?;
+        let op = BoolOp::try_from(
+            tokens
+                .first()
+                .ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?,
+        )?;
 
         match op {
             BoolOp::Not => {
@@ -292,7 +305,11 @@ impl Expr {
     }
 
     fn parse_comparison_expr(tokens: &[Token]) -> Result<(ComparisonExpr, usize), AppError> {
-        let op = ComparisonOp::try_from(tokens.first().ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?)?;
+        let op = ComparisonOp::try_from(
+            tokens
+                .first()
+                .ok_or(AppError::MissingExpression(Tokens(tokens.to_vec())))?,
+        )?;
 
         // BOTH has SAEM
         let consume_from = match tokens.get(1) {

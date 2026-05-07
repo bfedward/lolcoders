@@ -286,6 +286,12 @@ impl Interpreter {
 
                 eval_comparison_expr(comparison_expr, left, right)
             }
+            Expr::Negation(inner) => {
+                let inner_value = self.eval_expr(inner)?;
+                let mut inner_troof = inner_value.as_troof();
+                inner_troof.flip_value();
+                Ok(Value::Troof(inner_troof))
+            }
         }
     }
 }

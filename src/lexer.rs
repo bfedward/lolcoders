@@ -163,29 +163,19 @@ fn remove_obtw_commentary(source: String) -> Result<String, AppError> {
     for line in source.lines() {
         let line = line.trim_start(); // need this because we're using the first space to detect the first token
 
-        let is_obtw = line.find("OBTW");
-        if let Some(is_obtw) = is_obtw
-            && is_obtw != 0
-        {
-            return Err(AppError::ObtwMustStartLine);
-        }
-
-        let is_tldr = line.find("TLDR");
-        if let Some(is_tldr) = is_tldr
-            && line.len() > is_tldr + 4
-        {
-            return Err(AppError::TldrMustEndLine);
-        }
-
         // the end of the first token
         let mut new_line = String::new();
         let mut in_string = false;
         let mut first_token = true;
+        let mut passed_tldr = false;
 
         let mut chars = line.chars().peekable();
 
         while let Some(c) = chars.next() {
             match c {
+                _ if passed_tldr => {
+                    return Err(AppError::TldrMustEndLine);
+                }
                 '"' if !in_obtw => {
                     in_string = !in_string;
                     new_line.push(c);
@@ -245,6 +235,7 @@ fn remove_obtw_commentary(source: String) -> Result<String, AppError> {
 
                                 in_obtw = false;
                                 just_left_obtw = true;
+                                passed_tldr = true;
                             }
                         }
                     }

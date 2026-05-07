@@ -52,7 +52,7 @@ impl Value {
         }
     }
 
-    fn as_troof(&self) -> Troof {
+    pub fn as_troof(&self) -> Troof {
         match self {
             Value::Numbar(numbar) => numbar.clone().into(),
             Value::Numbr(numbr) => numbr.clone().into(),
