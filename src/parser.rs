@@ -254,6 +254,15 @@ pub fn parse_line(
             Ok(Some(Statement::Gimmeh(input.clone())))
         }
 
+        [
+            Token::Identifier(var),
+            Token::Keyword(Keyword::R),
+            rest @ ..,
+        ] => {
+            let (expr, _) = Expr::parse(rest)?;
+            Ok(Some(Statement::Rassignment(var.clone(), expr)))
+        }
+
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
         _ => Err(AppError::LineParseError(Tokens(tokens.to_vec()))),

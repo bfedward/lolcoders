@@ -41,6 +41,7 @@ pub enum AppError {
     CannotVisibleATroof,
     VisibleMustHaveAnArg,
     BadGimmeh,
+    CannotRedeclareVariable(Identifier),
 }
 
 impl fmt::Display for AppError {
@@ -147,6 +148,9 @@ impl fmt::Display for AppError {
             }
             AppError::BadGimmeh => {
                 write!(f, "Bad GIMMEH")
+            }
+            AppError::CannotRedeclareVariable(var) => {
+                write!(f, "Cannot redeclare variable: {var} ")
             }
         }
     }

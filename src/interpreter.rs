@@ -146,6 +146,11 @@ impl Interpreter {
                 let curr_scope = self
                     .current_scope_mut()
                     .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                if curr_scope.get(var_name).is_some() {
+                    return Err(AppError::CannotRedeclareVariable(var_name.clone()));
+                }
+
                 curr_scope.insert(var_name.clone(), value);
             }
             Statement::KThxBye => {
@@ -223,6 +228,18 @@ impl Interpreter {
                     .and_modify(|e| *e = Value::Yarn(Yarn::new(input)));
 
                 return Ok(());
+            }
+            Statement::Rassignment(var, expr) => {
+                let value = self.eval_expr(expr)?;
+                let curr_scope_mut = self
+                    .current_scope_mut()
+                    .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                let _ = curr_scope_mut
+                    .get(var)
+                    .ok_or(AppError::VariableDoesNotExist(var.clone()))?;
+
+                curr_scope_mut.entry(var.clone()).and_modify(|e| *e = value);
             }
             Statement::VarRIIzFunc(var_name, func_name, param_values) => {
                 let (func_params, func_statements) = self

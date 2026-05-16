@@ -264,4 +264,5 @@ pub enum Statement {
     KThxBye,
     CanHasLib(Identifier),
     Gimmeh(Identifier),
+    Rassignment(Identifier, Expr),
 }
