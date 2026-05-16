@@ -190,12 +190,6 @@ impl From<&Numbr> for Yarn {
     }
 }
 
-impl From<&Troof> for Yarn {
-    fn from(value: &Troof) -> Self {
-        Yarn::new(value.to_string())
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Troof {
     value: bool,

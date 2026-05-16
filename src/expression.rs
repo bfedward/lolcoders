@@ -121,6 +121,7 @@ impl TryFrom<&Token> for Expr {
             Token::Identifier(ident) => Ok(Expr::Variable(ident.clone())),
             Token::Keyword(_) => Err(AppError::TokenCannotBeExpression(token.clone())),
             Token::QuestionMark => Err(AppError::QuestionMarkIsNotAnExpression),
+            Token::ExclamationMark => Err(AppError::ExclamationMarkIsNotAnExpression),
         }
     }
 }

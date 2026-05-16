@@ -67,7 +67,7 @@ impl Value {
             Value::Numbar(numbar) => Ok(numbar.into()),
             Value::Numbr(numbr) => Ok(numbr.into()),
             Value::Yarn(yarn) => Ok(yarn.clone()),
-            Value::Troof(troof) => Ok(troof.into()),
+            Value::Troof(_) => Err(AppError::CannotVisibleATroof),
             Value::Noob => Err(AppError::CannotVisibleANoob),
         }
     }
@@ -254,7 +254,7 @@ pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError>
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Hai(f64),
-    Visible(Vec<Expr>),
+    Visible(Vec<Expr>, bool),
     IHasA(Identifier, Expr),
     HowIzI(Identifier, Vec<Identifier>, Vec<Statement>),
     IIz(Identifier, Vec<Expr>),

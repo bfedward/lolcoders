@@ -36,7 +36,10 @@ pub enum AppError {
     TldrMustEndLine,
     TldrMustBeAfterObtw,
     QuestionMarkIsNotAnExpression,
+    ExclamationMarkIsNotAnExpression,
     CannotVisibleANoob,
+    CannotVisibleATroof,
+    VisibleMustHaveAnArg,
 }
 
 impl fmt::Display for AppError {
@@ -129,8 +132,17 @@ impl fmt::Display for AppError {
             AppError::QuestionMarkIsNotAnExpression => {
                 write!(f, "Question mark is not an expression")
             }
+            AppError::ExclamationMarkIsNotAnExpression => {
+                write!(f, "Exclamation mark is not an expression")
+            }
             AppError::CannotVisibleANoob => {
                 write!(f, "Cannot VISIBLE a NOOB")
+            }
+            AppError::CannotVisibleATroof => {
+                write!(f, "Cannot VISIBLE a TROOF")
+            }
+            AppError::VisibleMustHaveAnArg => {
+                write!(f, "VISIBLE must have an arg")
             }
         }
     }

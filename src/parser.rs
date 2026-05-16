@@ -35,14 +35,28 @@ pub fn parse_line(
         [Token::Keyword(Keyword::Visible), rest @ ..] => {
             let mut exprs = Vec::new();
             let mut offset = 0;
+            let mut no_new_line = false;
 
-            while offset < rest.len() {
-                let (expr, consumed) = Expr::parse(&rest[offset..])?;
+            let mut slice = rest;
+
+            if let Some(last) = slice.last()
+                && *last == Token::ExclamationMark
+            {
+                no_new_line = true;
+                slice = &slice[..slice.len() - 1];
+            }
+
+            while offset < slice.len() {
+                let (expr, consumed) = Expr::parse(&slice[offset..])?;
                 exprs.push(expr);
                 offset += consumed;
             }
 
-            Ok(Some(Statement::Visible(exprs)))
+            if exprs.is_empty() {
+                return Err(AppError::VisibleMustHaveAnArg);
+            }
+
+            Ok(Some(Statement::Visible(exprs, no_new_line)))
         }
 
         [

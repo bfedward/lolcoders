@@ -116,7 +116,7 @@ impl Interpreter {
             Statement::CanHasLib(_) => {
                 // this is future lolcode functionality.
             }
-            Statement::Visible(exprs) => {
+            Statement::Visible(exprs, no_new_line) => {
                 let expr_values: Vec<Value> = exprs
                     .iter()
                     .map(|expr| self.eval_expr(expr))
@@ -133,7 +133,11 @@ impl Interpreter {
                     acc
                 });
 
-                println!("{}", concat)
+                if *no_new_line {
+                    print!("{}", concat)
+                } else {
+                    println!("{}", concat)
+                }
             }
             Statement::IHasA(var_name, expr) => {
                 let value = self.eval_expr(expr)?;

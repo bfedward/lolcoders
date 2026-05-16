@@ -19,6 +19,7 @@ pub enum Token {
     Troof(Troof),
     Noob,
     QuestionMark,
+    ExclamationMark,
 }
 
 impl fmt::Display for Token {
@@ -32,6 +33,7 @@ impl fmt::Display for Token {
             Token::Troof(b) => write!(f, "{}", if b.value() { "WIN" } else { "FAIL" }),
             Token::Noob => write!(f, "NOOB"),
             Token::QuestionMark => write!(f, "?"),
+            Token::ExclamationMark => write!(f, "!"),
         }
     }
 }
@@ -334,7 +336,24 @@ fn split_line(line: &str) -> Vec<String> {
     raw_tokens
 }
 
-fn classify_token(word: String) -> Result<Vec<Token>, AppError> {
+fn classify_token(mut word: String) -> Result<Vec<Token>, AppError> {
+    if word.ends_with('?') {
+        word.pop();
+        let mut tokens = core_classify_token(word)?;
+        tokens.push(Token::QuestionMark);
+        Ok(tokens)
+    } else if word.ends_with('!') {
+        word.pop();
+        let mut tokens = core_classify_token(word)?;
+        tokens.push(Token::ExclamationMark);
+        Ok(tokens)
+    } else {
+        let tokens = core_classify_token(word)?;
+        Ok(tokens)
+    }
+}
+
+fn core_classify_token(word: String) -> Result<Vec<Token>, AppError> {
     if word.starts_with('"') && word.ends_with('"') {
         return Ok(vec![Token::Yarn(Yarn::new(word))]);
     }
@@ -360,28 +379,6 @@ fn classify_token(word: String) -> Result<Vec<Token>, AppError> {
 
     if let Some(keyword) = Keyword::from_str(&word) {
         return Ok(vec![Token::Keyword(keyword)]);
-    }
-
-    let count_qmark = {
-        let mut count = 0;
-        for c in word.chars() {
-            if c == '?' {
-                count += 1;
-            }
-        }
-        count
-    };
-
-    if word.len() == 1 && count_qmark == 1 {
-        return Ok(vec![Token::QuestionMark]);
-    }
-
-    if count_qmark == 1 && word.ends_with('?') {
-        let word = word.replace("?", "");
-        return Ok(vec![
-            Token::Identifier(Identifier::new(word)?),
-            Token::QuestionMark,
-        ]);
     }
 
     Ok(vec![Token::Identifier(Identifier::new(word)?)])
