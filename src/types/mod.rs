@@ -263,4 +263,5 @@ pub enum Statement {
     Gtfo,
     KThxBye,
     CanHasLib(Identifier),
+    Gimmeh(Identifier),
 }

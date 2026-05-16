@@ -85,4 +85,5 @@ define_keywords! {
     Diffrint => "DIFFRINT",
     Btw => "BTW",
     Can => "CAN",
+    Gimmeh => "GIMMEH"
 }

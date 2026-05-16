@@ -1,6 +1,8 @@
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::process::Stdio;
 
 // To run a specific group of tests: LCR_GROUPS=3-Types cargo test
 // To run multiple groups: LCR_GROUPS=3-Types,10-Loops cargo test
@@ -70,10 +72,26 @@ fn run_lci_tests() {
         let program = dir.join("test.lol");
         let expected_out = dir.join("test.out");
         let expected_err = dir.join("test.err");
+        let input_file = dir.join("test.in");
 
-        let output = Command::new(env!("CARGO_BIN_EXE_lolcoders"))
-            .arg(&program)
-            .output();
+        let output = (|| -> std::io::Result<std::process::Output> {
+            let mut child = Command::new(env!("CARGO_BIN_EXE_lolcoders"))
+                .arg(&program)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .spawn()?;
+
+            if input_file.exists() {
+                let input = fs::read_to_string(&input_file)?;
+
+                if let Some(stdin) = child.stdin.as_mut() {
+                    stdin.write_all(input.as_bytes())?;
+                }
+            }
+
+            child.wait_with_output()
+        })();
 
         let mut result = TestResult {
             path: path_str.clone(),

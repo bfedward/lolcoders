@@ -40,6 +40,7 @@ pub enum AppError {
     CannotVisibleANoob,
     CannotVisibleATroof,
     VisibleMustHaveAnArg,
+    BadGimmeh,
 }
 
 impl fmt::Display for AppError {
@@ -143,6 +144,9 @@ impl fmt::Display for AppError {
             }
             AppError::VisibleMustHaveAnArg => {
                 write!(f, "VISIBLE must have an arg")
+            }
+            AppError::BadGimmeh => {
+                write!(f, "Bad GIMMEH")
             }
         }
     }

@@ -250,6 +250,10 @@ pub fn parse_line(
             Vec::new(),
         ))),
 
+        [Token::Keyword(Keyword::Gimmeh), Token::Identifier(input)] => {
+            Ok(Some(Statement::Gimmeh(input.clone())))
+        }
+
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
         _ => Err(AppError::LineParseError(Tokens(tokens.to_vec()))),

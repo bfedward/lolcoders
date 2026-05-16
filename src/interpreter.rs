@@ -10,6 +10,7 @@ use crate::{
     types::{Statement, Value},
 };
 use std::collections::HashMap;
+use std::io::{Write, stdin, stdout};
 
 pub struct Interpreter {
     // it_variable: Option<Value>,
@@ -195,6 +196,33 @@ impl Interpreter {
             }
             Statement::FoundYr(_) | Statement::Gtfo => {
                 return Err(AppError::CannotReturnFromFunctionOutsideFunction);
+            }
+            Statement::Gimmeh(input_var) => {
+                let curr_scope_mut = self
+                    .current_scope_mut()
+                    .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                let _ = curr_scope_mut
+                    .get(input_var)
+                    .ok_or(AppError::VariableDoesNotExist(input_var.clone()))?;
+
+                let mut input = String::new();
+
+                stdout().flush().ok();
+
+                stdin()
+                    .read_line(&mut input)
+                    .map_err(|_| AppError::BadGimmeh)?;
+
+                // the user presses enter at the end of their input, so
+                // we need to remove the trailing newline characters
+                let input = input.trim_end_matches(&['\n', '\r'][..]).to_string();
+
+                curr_scope_mut
+                    .entry(input_var.clone())
+                    .and_modify(|e| *e = Value::Yarn(Yarn::new(input)));
+
+                return Ok(());
             }
             Statement::VarRIIzFunc(var_name, func_name, param_values) => {
                 let (func_params, func_statements) = self
