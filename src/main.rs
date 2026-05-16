@@ -10,10 +10,10 @@ use interpreter::Interpreter;
 use std::{env, fs, path::Path};
 
 fn main() {
-    let args = env::args().skip(1);
+    let args: Vec<String> = env::args().skip(1).collect();
 
-    if args.len() == 0 {
-        eprintln!("Usage: lcr <file1.lol> [file2.lol ...]");
+    if args.is_empty() {
+        eprintln!("Usage: lolcoders <file1.lol> [file2.lol ...]");
         std::process::exit(1);
     }
 

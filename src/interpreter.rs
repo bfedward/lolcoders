@@ -3,6 +3,7 @@ use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
 
 use crate::types::identifier::Identifier;
+use crate::types::primitive::Yarn;
 use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
 use crate::{
     app_error::AppError,
@@ -115,12 +116,24 @@ impl Interpreter {
             Statement::CanHasLib(_) => {
                 // this is future lolcode functionality.
             }
-            Statement::Visible(expr) => {
-                let value = self.eval_expr(expr)?;
-                if matches!(value, Value::Noob) {
-                    return Err(AppError::CannotVisibleANoob);
-                }
-                println!("{}", value);
+            Statement::Visible(exprs) => {
+                let expr_values: Vec<Value> = exprs
+                    .iter()
+                    .map(|expr| self.eval_expr(expr))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                let yarns: Vec<Yarn> = expr_values.iter().map(|y| y.as_yarn()).collect::<Result<
+                    Vec<_>,
+                    AppError,
+                >>(
+                )?;
+
+                let concat = yarns.iter().fold(Yarn::new(String::new()), |mut acc, x| {
+                    acc.concat(x.clone());
+                    acc
+                });
+
+                println!("{}", concat)
             }
             Statement::IHasA(var_name, expr) => {
                 let value = self.eval_expr(expr)?;

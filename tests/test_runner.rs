@@ -71,7 +71,7 @@ fn run_lci_tests() {
         let expected_out = dir.join("test.out");
         let expected_err = dir.join("test.err");
 
-        let output = Command::new(env!("CARGO_BIN_EXE_lcr"))
+        let output = Command::new(env!("CARGO_BIN_EXE_lolcoders"))
             .arg(&program)
             .output();
 

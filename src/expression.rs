@@ -127,6 +127,13 @@ impl TryFrom<&Token> for Expr {
 
 impl Expr {
     pub fn parse(tokens: &[Token]) -> Result<(Self, usize), AppError> {
+        // if there's only one Token
+        if tokens.len() == 1
+            && let Some(first) = tokens.first()
+        {
+            return Ok((Expr::try_from(first)?, 1));
+        }
+
         // parsing is done by matching on the first token.
         // this doesn't work for BOTH, because BOTH SAEM is a comparison expr
         // and BOTH OF is a boolean expression.
@@ -147,14 +154,15 @@ impl Expr {
                 let (op, exprs, consumed) = Expr::parse_bool_expr(tokens)?;
                 return Ok((Expr::Bool { op, args: exprs }, consumed));
             }
-            [Token::Keyword(Keyword::Not), rest @ ..] => {
-                let (rest, consumed) = Expr::parse(rest)?;
-                return Ok((Expr::Negation(Box::new(rest)), consumed));
-            }
             _ => (),
         }
 
         match tokens.first() {
+            Some(Token::Keyword(Keyword::Not)) => {
+                let (negation, consumed) = Expr::parse(&tokens[1..])?;
+                Ok((Expr::Negation(Box::new(negation)), consumed + 1))
+            }
+
             // maths expr
             Some(Token::Keyword(k)) if MathOp::try_from(&Token::Keyword(k.clone())).is_ok() => {
                 let (maths_expr, consumed) = Expr::parse_math_expr(tokens)?;

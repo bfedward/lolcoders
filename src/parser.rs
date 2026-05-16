@@ -33,8 +33,16 @@ pub fn parse_line(
         }
 
         [Token::Keyword(Keyword::Visible), rest @ ..] => {
-            let (expr, _) = Expr::parse(rest)?;
-            Ok(Some(Statement::Visible(expr)))
+            let mut exprs = Vec::new();
+            let mut offset = 0;
+
+            while offset < rest.len() {
+                let (expr, consumed) = Expr::parse(&rest[offset..])?;
+                exprs.push(expr);
+                offset += consumed;
+            }
+
+            Ok(Some(Statement::Visible(exprs)))
         }
 
         [

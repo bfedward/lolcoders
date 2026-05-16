@@ -50,7 +50,7 @@ impl Numbar {
 
 impl Display for Numbar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.2}", f64::trunc(self.value * 100.0) / 100.0)
+        write!(f, "{:.2}", ((self.value * 100.0) + 1e-9).trunc() / 100.0)
     }
 }
 
@@ -175,6 +175,24 @@ impl Yarn {
 impl Display for Yarn {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.value)
+    }
+}
+
+impl From<&Numbar> for Yarn {
+    fn from(value: &Numbar) -> Self {
+        Yarn::new(value.to_string())
+    }
+}
+
+impl From<&Numbr> for Yarn {
+    fn from(value: &Numbr) -> Self {
+        Yarn::new(value.to_string())
+    }
+}
+
+impl From<&Troof> for Yarn {
+    fn from(value: &Troof) -> Self {
+        Yarn::new(value.to_string())
     }
 }
 

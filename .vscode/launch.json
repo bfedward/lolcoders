@@ -19,7 +19,8 @@
                     "kind": "bin"
                 }
             },
-            "args": [],
+            "program": "${workspaceFolder}/target/debug/lolcoders",
+            "args": ["program.lol"],
             "cwd": "${workspaceFolder}"
         },
         {

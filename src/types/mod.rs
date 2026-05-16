@@ -61,6 +61,16 @@ impl Value {
             Value::Noob => Troof::new(false),
         }
     }
+
+    pub fn as_yarn(&self) -> Result<Yarn, AppError> {
+        match self {
+            Value::Numbar(numbar) => Ok(numbar.into()),
+            Value::Numbr(numbr) => Ok(numbr.into()),
+            Value::Yarn(yarn) => Ok(yarn.clone()),
+            Value::Troof(troof) => Ok(troof.into()),
+            Value::Noob => Err(AppError::CannotVisibleANoob),
+        }
+    }
 }
 
 impl PartialEq for Value {
@@ -244,7 +254,7 @@ pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError>
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Hai(f64),
-    Visible(Expr),
+    Visible(Vec<Expr>),
     IHasA(Identifier, Expr),
     HowIzI(Identifier, Vec<Identifier>, Vec<Statement>),
     IIz(Identifier, Vec<Expr>),
