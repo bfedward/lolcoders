@@ -102,6 +102,8 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                         result.push_str(&current_line);
                         current_line.clear();
                         in_btw_comment = true;
+                    } else {
+                        current_line.push(c);
                     }
                 } else {
                     current_line.push(c);
@@ -120,7 +122,11 @@ pub fn normalise_source(source: String) -> Result<String, AppError> {
                             chars.next();
                             current_line.push_str("OBTW");
                             in_obtw_comment = true;
+                        } else {
+                            current_line.push(c);
                         }
+                    } else {
+                        current_line.push(c);
                     }
                 } else {
                     current_line.push(c);

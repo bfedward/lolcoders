@@ -73,6 +73,16 @@ pub fn parse_line(
             Token::Identifier(variable_name),
             Token::Keyword(Keyword::Itz),
             Token::Keyword(Keyword::A),
+            Token::Keyword(Keyword::Noob),
+        ] => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
+
+        [
+            Token::Keyword(Keyword::I),
+            Token::Keyword(Keyword::Has),
+            Token::Keyword(Keyword::A),
+            Token::Identifier(variable_name),
+            Token::Keyword(Keyword::Itz),
+            Token::Keyword(Keyword::A),
             Token::Keyword(var_type),
         ] => {
             let variable_name = variable_name.clone();
@@ -96,6 +106,19 @@ pub fn parse_line(
                 Keyword::Noob => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
                 _ => Err(AppError::UnknownVariableType),
             }
+        }
+
+        [
+            Token::Keyword(Keyword::I),
+            Token::Keyword(Keyword::Has),
+            Token::Keyword(Keyword::A),
+            Token::Identifier(variable_name),
+            Token::Keyword(Keyword::Itz),
+            Token::Keyword(Keyword::A),
+            rest @ ..,
+        ] => {
+            let (expr, _) = Expr::parse(rest)?;
+            Ok(Some(Statement::IHasA(variable_name.clone(), expr)))
         }
 
         [
