@@ -232,12 +232,22 @@ pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError>
                 Troof::new(false)
             }
         }
-        BoolOp::Either | BoolOp::Won => {
+        BoolOp::Either => {
             if exprs.iter().any(|t| t.as_troof().value()) {
                 Troof::new(true)
             } else {
                 Troof::new(false)
             }
+        }
+        BoolOp::Won => {
+            let how_many = exprs.iter().fold(0, |mut acc, x| {
+                if x.as_troof().value() {
+                    acc += 1;
+                }
+                acc
+            });
+
+            Troof::new(how_many == 1)
         }
         BoolOp::Not => {
             if exprs.iter().all(|t| t.as_troof().value()) {
