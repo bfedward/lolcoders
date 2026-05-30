@@ -2,11 +2,8 @@ use std::fmt;
 
 use crate::{
     app_error::AppError,
-    expression::{BoolOp, ComparisonExpr, ComparisonOp, Expr, MathOp, MathsExpr},
-    types::{
-        identifier::Identifier,
-        primitive::{Numbar, Number, Numbr, Troof, Yarn},
-    },
+    expression::{BoolOp, ComparisonExpr, ComparisonOp, MathOp, MathsExpr},
+    types::primitive::{Numbar, Number, Numbr, Troof, Yarn},
 };
 
 pub mod identifier;
@@ -259,20 +256,4 @@ pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError>
     };
 
     Ok(Value::Troof(res))
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum Statement {
-    Hai(f64),
-    Visible(Vec<Expr>, bool),
-    IHasA(Identifier, Expr),
-    HowIzI(Identifier, Vec<Identifier>, Vec<Statement>),
-    IIz(Identifier, Vec<Expr>),
-    VarRIIzFunc(Identifier, Identifier, Vec<Expr>),
-    FoundYr(Expr),
-    Gtfo,
-    KThxBye,
-    CanHasLib(Identifier),
-    Gimmeh(Identifier),
-    Rassignment(Identifier, Expr),
 }

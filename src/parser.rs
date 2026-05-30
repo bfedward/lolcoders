@@ -3,10 +3,8 @@ use crate::{
     expression::Expr,
     keywords::Keyword,
     lexer::{Token, Tokens, tokenize_line},
-    types::{
-        Statement,
-        primitive::{Numbar, Numbr, Troof, Yarn},
-    },
+    statement::{MebbeBlock, ORlyBlock, Statement},
+    types::primitive::{Numbar, Numbr, Troof, Yarn},
 };
 use std::iter::Peekable;
 
@@ -47,6 +45,11 @@ pub fn parse_line(
             }
 
             while offset < slice.len() {
+                if slice[offset] == Token::Keyword(Keyword::An) {
+                    offset += 1;
+                    continue;
+                }
+
                 let (expr, consumed) = Expr::parse(&slice[offset..])?;
                 exprs.push(expr);
                 offset += consumed;
@@ -286,9 +289,30 @@ pub fn parse_line(
             Ok(Some(Statement::Rassignment(var.clone(), expr)))
         }
 
+        [
+            Token::Keyword(Keyword::O),
+            Token::Keyword(Keyword::Rly),
+            Token::QuestionMark,
+        ] => {
+            let o_rly_block = parse_o_rly_block(tokens, lines)?;
+            Ok(Some(Statement::ORly(o_rly_block)))
+        }
+
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
-        _ => Err(AppError::LineParseError(Tokens(tokens.to_vec()))),
+        // a line of lolcode may just be an expression.
+        _ => {
+            // attempt to parse the whole line as an expression.
+            match Expr::parse(tokens) {
+                // if parsing produces an Expr and all line tokens are consumed,
+                // then the line was just an expression.
+                Ok((expr, consumed)) if consumed == tokens.len() => Ok(Some(Statement::Expr(expr))),
+
+                // if parsing the line did not produce an Expr or some line tokens were
+                // not consumed, then there is a line parse error.
+                _ => Err(AppError::LineParseError(Tokens(tokens.to_vec()))),
+            }
+        }
     }
 }
 
@@ -396,4 +420,107 @@ pub fn parse_function(
     }
 
     Ok(Statement::HowIzI(func_name.clone(), params, body))
+}
+
+pub fn parse_o_rly_block(
+    tokens: &[Token],
+    lines: &mut Peekable<std::str::Lines>,
+) -> Result<ORlyBlock, AppError> {
+    let mut o_rly_block = ORlyBlock::default();
+
+    match tokens {
+        [
+            Token::Keyword(Keyword::O),
+            Token::Keyword(Keyword::Rly),
+            Token::QuestionMark,
+        ] => (),
+        _ => return Err(AppError::ORlyParseError),
+    };
+
+    let line = lines.next().ok_or(AppError::ORlyBlockMustHaveYaRly)?;
+    let tokens = tokenize_line(line)?;
+
+    match tokens.as_slice() {
+        [Token::Keyword(Keyword::Ya), Token::Keyword(Keyword::Rly)] => (),
+        _ => return Err(AppError::ORlyBlockMustHaveYaRly),
+    }
+
+    let (ya_rly_block_stmts, boundary) = parse_o_rly_sub_block(lines)?;
+    o_rly_block.ya_rly_block = ya_rly_block_stmts;
+
+    let mut boundary = boundary;
+
+    while let ORlyBoundary::Mebbe(expr) = boundary {
+        let (stmts, next_boundary) = parse_o_rly_sub_block(lines)?;
+
+        o_rly_block.mebbe_blocks.push(MebbeBlock {
+            expr,
+            statements: stmts,
+        });
+
+        boundary = next_boundary;
+    }
+
+    match boundary {
+        ORlyBoundary::NoWai => {
+            let (stmts, next) = parse_o_rly_sub_block(lines)?;
+
+            o_rly_block.no_wai_block = stmts;
+
+            match next {
+                ORlyBoundary::Oic => Ok(o_rly_block),
+                ORlyBoundary::Mebbe(_) => Err(AppError::ORlyNoWaiBlockMustBeLast),
+                ORlyBoundary::NoWai => Err(AppError::ORlyBlockCanOnlyHaveOneNoWai),
+            }
+        }
+
+        ORlyBoundary::Oic => Ok(o_rly_block),
+
+        ORlyBoundary::Mebbe(_) => Err(AppError::ORlyNoWaiBlockMustBeLast),
+    }
+}
+
+enum ORlyBoundary {
+    Mebbe(Expr),
+    NoWai,
+    Oic,
+}
+
+fn parse_o_rly_sub_block(
+    lines: &mut Peekable<std::str::Lines>,
+) -> Result<(Vec<Statement>, ORlyBoundary), AppError> {
+    let mut statements = Vec::new();
+
+    while let Some(line) = lines.peek() {
+        let tokens = tokenize_line(line)?;
+
+        match tokens.as_slice() {
+            [Token::Keyword(Keyword::Mebbe), rest @ ..] => {
+                let (expr, consumed) = Expr::parse(rest)?;
+                if consumed != rest.len() {
+                    return Err(AppError::ORlyParseError);
+                }
+                lines.next();
+                return Ok((statements, ORlyBoundary::Mebbe(expr)));
+            }
+            [Token::Keyword(Keyword::No), Token::Keyword(Keyword::Wai)] => {
+                lines.next();
+                return Ok((statements, ORlyBoundary::NoWai));
+            }
+            [Token::Keyword(Keyword::Oic)] => {
+                lines.next();
+                return Ok((statements, ORlyBoundary::Oic));
+            }
+            _ => {
+                let line = lines.next().ok_or(AppError::ORlyParseError)?;
+                let tokens = tokenize_line(line)?;
+
+                if let Some(stmt) = parse_line(&tokens, lines)? {
+                    statements.push(stmt);
+                }
+            }
+        }
+    }
+
+    Err(AppError::ORlyBlockMustEndOic)
 }

@@ -42,6 +42,12 @@ pub enum AppError {
     VisibleMustHaveAnArg,
     BadGimmeh,
     CannotRedeclareVariable(Identifier),
+    NoValueInItVariable,
+    ORlyParseError,
+    ORlyBlockMustHaveYaRly,
+    ORlyBlockMustEndOic,
+    ORlyBlockCanOnlyHaveOneNoWai,
+    ORlyNoWaiBlockMustBeLast,
 }
 
 impl fmt::Display for AppError {
@@ -151,6 +157,24 @@ impl fmt::Display for AppError {
             }
             AppError::CannotRedeclareVariable(var) => {
                 write!(f, "Cannot redeclare variable: {var} ")
+            }
+            AppError::NoValueInItVariable => {
+                write!(f, "No value in IT")
+            }
+            AppError::ORlyParseError => {
+                write!(f, "O RLY parse error")
+            }
+            AppError::ORlyBlockMustHaveYaRly => {
+                write!(f, "O RLY must have YA RLY block")
+            }
+            AppError::ORlyBlockMustEndOic => {
+                write!(f, "O RLY must end with OIC")
+            }
+            AppError::ORlyBlockCanOnlyHaveOneNoWai => {
+                write!(f, "O RLY block can only have one NO WAI block")
+            }
+            AppError::ORlyNoWaiBlockMustBeLast => {
+                write!(f, "NO WAI block must appear last inside O RLY")
             }
         }
     }

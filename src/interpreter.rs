@@ -2,18 +2,16 @@ use crate::expression::Expr;
 use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
 
+use crate::statement::Statement;
 use crate::types::identifier::Identifier;
 use crate::types::primitive::Yarn;
 use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
-use crate::{
-    app_error::AppError,
-    types::{Statement, Value},
-};
+use crate::{app_error::AppError, types::Value};
 use std::collections::HashMap;
 use std::io::{Write, stdin, stdout};
 
 pub struct Interpreter {
-    // it_variable: Option<Value>,
+    it_variable: Option<Value>,
     variables: Vec<HashMap<Identifier, Value>>,
     functions: HashMap<Identifier, (Vec<Identifier>, Vec<Statement>)>,
 }
@@ -21,7 +19,7 @@ pub struct Interpreter {
 impl Interpreter {
     pub fn new() -> Self {
         Self {
-            // it_variable: None,
+            it_variable: None,
             variables: vec![HashMap::new()],
             functions: HashMap::new(),
         }
@@ -309,6 +307,38 @@ impl Interpreter {
                 }
 
                 self.variables.pop();
+            }
+            Statement::Expr(expr) => {
+                let val = self.eval_expr(expr)?;
+                self.it_variable = Some(val);
+            }
+            Statement::ORly(o_rly_block) => {
+                let it_val = self
+                    .it_variable
+                    .as_ref()
+                    .ok_or(AppError::NoValueInItVariable)?
+                    .clone();
+
+                if it_val.as_troof().value() {
+                    for stmt in &o_rly_block.ya_rly_block {
+                        self.execute_statement(stmt)?;
+                    }
+                    return Ok(());
+                } else {
+                    for mebbe_block in &o_rly_block.mebbe_blocks {
+                        let expr_val = self.eval_expr(&mebbe_block.expr)?;
+                        if expr_val.as_troof().value() {
+                            for stmt in &mebbe_block.statements {
+                                self.execute_statement(stmt)?;
+                            }
+                            return Ok(());
+                        }
+                    }
+                }
+
+                for stmt in &o_rly_block.no_wai_block {
+                    self.execute_statement(stmt)?;
+                }
             }
         }
         Ok(())

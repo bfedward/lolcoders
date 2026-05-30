@@ -4,6 +4,7 @@ mod interpreter;
 mod keywords;
 mod lexer;
 mod parser;
+mod statement;
 mod types;
 
 use interpreter::Interpreter;
