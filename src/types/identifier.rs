@@ -1,6 +1,11 @@
 use std::fmt;
 
-use crate::{app_error::AppError, keywords::Keyword};
+use crate::{
+    app_error::AppError,
+    expression::Expr,
+    keywords::Keyword,
+    lexer::{Token, Tokens},
+};
 
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
 pub struct Identifier {
@@ -35,5 +40,31 @@ impl Identifier {
 impl fmt::Display for Identifier {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.name)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum IdentifierExpr {
+    Identifier(Identifier),
+    Srs(Box<Expr>),
+}
+
+impl IdentifierExpr {
+    pub fn parse(tokens: &[Token]) -> Result<(Self, usize), AppError> {
+        match tokens {
+            [Token::Keyword(Keyword::Srs), rest @ ..] => {
+                let (expr, consumed) = Expr::parse(rest)?;
+
+                if consumed != rest.len() {
+                    return Err(AppError::InvalidExpression(Tokens(tokens.to_vec())));
+                }
+
+                Ok((IdentifierExpr::Srs(Box::new(expr)), consumed + 1))
+            }
+
+            [Token::Identifier(id), ..] => Ok((IdentifierExpr::Identifier(id.clone()), 1)),
+
+            _ => Err(AppError::InvalidIdentifierExpr(Tokens(tokens.to_vec()))),
+        }
     }
 }

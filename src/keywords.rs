@@ -84,6 +84,7 @@ define_keywords! {
     Say => "SAY",
     Smallr => "SMALLR",
     So => "SO",
+    Srs => "SRS",
     Sum => "SUM",
     Troof => "TROOF",
     U => "U",

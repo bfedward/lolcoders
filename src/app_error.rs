@@ -13,12 +13,12 @@ pub enum AppError {
     FunctionDoesNotExist(Identifier),
     NotEnoughArgsForFunction,
     InvalidIdentifier(String),
+    InvalidIdentifierExpr(Tokens),
     TokenCannotBeExpression(Token),
     MissingExpression(Tokens),
     CouldNotGetCurrentVariableScope,
     CannotReturnFromFunctionOutsideFunction,
     FunctionMustEndIfUSaySo,
-    UnknownVariableType,
     IncorrectFunctionArguments(Identifier, Tokens),
     LineParseError(Tokens),
     FunctionArgumentsMustEndWithMkay,
@@ -48,6 +48,9 @@ pub enum AppError {
     ORlyBlockMustEndOic,
     ORlyBlockCanOnlyHaveOneNoWai,
     ORlyNoWaiBlockMustBeLast,
+    CanHasMustEndQuestionMark,
+    UnexpectedEOF,
+    InvalidSyntax(Tokens),
 }
 
 impl fmt::Display for AppError {
@@ -68,6 +71,9 @@ impl fmt::Display for AppError {
             AppError::InvalidIdentifier(name) => {
                 write!(f, "Invalid variable identifier: {name}")
             }
+            AppError::InvalidIdentifierExpr(tokens) => {
+                write!(f, "Invalid identifier expression: {tokens}")
+            }
             AppError::TokenCannotBeExpression(token) => {
                 write!(f, "Token {token} cannot be expression")
             }
@@ -82,9 +88,6 @@ impl fmt::Display for AppError {
             }
             AppError::FunctionMustEndIfUSaySo => {
                 write!(f, "Function must end IF U SAY SO")
-            }
-            AppError::UnknownVariableType => {
-                write!(f, "Unknown variable type")
             }
             AppError::IncorrectFunctionArguments(called_func, tokens) => {
                 write!(
@@ -175,6 +178,15 @@ impl fmt::Display for AppError {
             }
             AppError::ORlyNoWaiBlockMustBeLast => {
                 write!(f, "NO WAI block must appear last inside O RLY")
+            }
+            AppError::CanHasMustEndQuestionMark => {
+                write!(f, "CAN HAS must end with a question mark")
+            }
+            AppError::UnexpectedEOF => {
+                write!(f, "Unexpected EOF")
+            }
+            AppError::InvalidSyntax(tokens) => {
+                write!(f, "Invalid syntax: {tokens}")
             }
         }
     }

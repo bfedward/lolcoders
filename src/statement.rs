@@ -1,17 +1,20 @@
-use crate::{expression::Expr, types::identifier::Identifier};
+use crate::{
+    expression::Expr,
+    types::identifier::{Identifier, IdentifierExpr},
+};
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
     Hai(f64),
     Visible(Vec<Expr>, bool),
-    IHasA(Identifier, Expr),
+    IHasA(IdentifierExpr, Expr),
     HowIzI(Identifier, Vec<Identifier>, Vec<Statement>),
     IIz(Identifier, Vec<Expr>),
     VarRIIzFunc(Identifier, Identifier, Vec<Expr>),
     FoundYr(Expr),
     Gtfo,
     KThxBye,
-    CanHasLib(Identifier),
+    CanHasLib(IdentifierExpr),
     Gimmeh(Identifier),
     Rassignment(Identifier, Expr),
     Expr(Expr),

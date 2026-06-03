@@ -4,7 +4,10 @@ use crate::{
     keywords::Keyword,
     lexer::{Token, Tokens, tokenize_line},
     statement::{MebbeBlock, ORlyBlock, Statement},
-    types::primitive::{Numbar, Numbr, Troof, Yarn},
+    types::{
+        identifier::IdentifierExpr,
+        primitive::{Numbar, Numbr, Troof, Yarn},
+    },
 };
 use std::iter::Peekable;
 
@@ -22,9 +25,22 @@ pub fn parse_line(
         [
             Token::Keyword(Keyword::Can),
             Token::Keyword(Keyword::Has),
-            Token::Identifier(lib),
-            Token::QuestionMark,
-        ] => Ok(Some(Statement::CanHasLib(lib.clone()))),
+            rest @ ..,
+        ] => {
+            let Some(Token::QuestionMark) = rest.last() else {
+                return Err(AppError::CanHasMustEndQuestionMark);
+            };
+
+            let ident_tokens = &rest[..rest.len() - 1];
+
+            let (ident_expr, consumed) = IdentifierExpr::parse(ident_tokens)?;
+
+            if consumed != ident_tokens.len() {
+                return Err(AppError::InvalidIdentifierExpr(Tokens(tokens.to_vec())));
+            }
+
+            Ok(Some(Statement::CanHasLib(ident_expr)))
+        }
 
         [Token::Keyword(Keyword::Hai), Token::Numbar(version)] => {
             Ok(Some(Statement::Hai(version.value())))
@@ -61,79 +77,52 @@ pub fn parse_line(
 
             Ok(Some(Statement::Visible(exprs, no_new_line)))
         }
-
+        
         [
             Token::Keyword(Keyword::I),
             Token::Keyword(Keyword::Has),
-            Token::Keyword(Keyword::A),
-            Token::Identifier(variable_name),
-        ] => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
-
-        [
-            Token::Keyword(Keyword::I),
-            Token::Keyword(Keyword::Has),
-            Token::Keyword(Keyword::A),
-            Token::Identifier(variable_name),
-            Token::Keyword(Keyword::Itz),
-            Token::Keyword(Keyword::A),
-            Token::Keyword(Keyword::Noob),
-        ] => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
-
-        [
-            Token::Keyword(Keyword::I),
-            Token::Keyword(Keyword::Has),
-            Token::Keyword(Keyword::A),
-            Token::Identifier(variable_name),
-            Token::Keyword(Keyword::Itz),
-            Token::Keyword(Keyword::A),
-            Token::Keyword(var_type),
+            rest @ ..,
         ] => {
-            let variable_name = variable_name.clone();
-            match var_type {
-                Keyword::Yarn => Ok(Some(Statement::IHasA(
-                    variable_name,
-                    Expr::Yarn(Yarn::default()),
-                ))),
-                Keyword::Troof => Ok(Some(Statement::IHasA(
-                    variable_name,
-                    Expr::Troof(Troof::default()),
-                ))),
-                Keyword::Numbar => Ok(Some(Statement::IHasA(
-                    variable_name,
-                    Expr::Numbar(Numbar::default()),
-                ))),
-                Keyword::Numbr => Ok(Some(Statement::IHasA(
-                    variable_name,
-                    Expr::Numbr(Numbr::default()),
-                ))),
-                Keyword::Noob => Ok(Some(Statement::IHasA(variable_name.clone(), Expr::Noob))),
-                _ => Err(AppError::UnknownVariableType),
+            let mut i = 0;
+
+            if rest.get(i) == Some(&Token::Keyword(Keyword::A)) {
+                i += 1;
             }
-        }
 
-        [
-            Token::Keyword(Keyword::I),
-            Token::Keyword(Keyword::Has),
-            Token::Keyword(Keyword::A),
-            Token::Identifier(variable_name),
-            Token::Keyword(Keyword::Itz),
-            Token::Keyword(Keyword::A),
-            rest @ ..,
-        ] => {
-            let (expr, _) = Expr::parse(rest)?;
-            Ok(Some(Statement::IHasA(variable_name.clone(), expr)))
-        }
+            let (var, consumed) = IdentifierExpr::parse(&rest[i..])?;
+            i += consumed;
 
-        [
-            Token::Keyword(Keyword::I),
-            Token::Keyword(Keyword::Has),
-            Token::Keyword(Keyword::A),
-            Token::Identifier(variable_name),
-            Token::Keyword(Keyword::Itz),
-            rest @ ..,
-        ] => {
-            let (expr, _) = Expr::parse(rest)?;
-            Ok(Some(Statement::IHasA(variable_name.clone(), expr)))
+            let mut init = Expr::Noob;
+
+            if let Some(Token::Keyword(Keyword::Itz)) = rest.get(i) {
+                i += 1;
+
+                // optional "A" after ITZ
+                if rest.get(i) == Some(&Token::Keyword(Keyword::A)) {
+                    i += 1;
+                }
+
+                // special typed init
+                let (expr, consumed) = match rest.get(i) {
+                    Some(Token::Keyword(Keyword::Yarn)) => (Expr::Yarn(Yarn::default()), 1),
+                    Some(Token::Keyword(Keyword::Troof)) => (Expr::Troof(Troof::default()), 1),
+                    Some(Token::Keyword(Keyword::Numbar)) => (Expr::Numbar(Numbar::default()), 1),
+                    Some(Token::Keyword(Keyword::Numbr)) => (Expr::Numbr(Numbr::default()), 1),
+                    Some(Token::Keyword(Keyword::Noob)) => (Expr::Noob, 1),
+                    Some(_) => Expr::parse(&rest[i..])?,
+                    None => return Err(AppError::UnexpectedEOF),
+                };
+
+                init = expr;
+
+                i += consumed;
+            }
+
+            if i != rest.len() {
+                return Err(AppError::InvalidSyntax(Tokens(tokens.to_vec())));
+            }
+
+            Ok(Some(Statement::IHasA(var, init)))
         }
 
         [

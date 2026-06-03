@@ -3,7 +3,7 @@ use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
 
 use crate::statement::Statement;
-use crate::types::identifier::Identifier;
+use crate::types::identifier::{Identifier, IdentifierExpr};
 use crate::types::primitive::Yarn;
 use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
 use crate::{app_error::AppError, types::Value};
@@ -139,17 +139,19 @@ impl Interpreter {
                 }
             }
             Statement::IHasA(var_name, expr) => {
+                let identifier = self.resolve_identifier_expr(var_name)?;
+
                 let value = self.eval_expr(expr)?;
 
                 let curr_scope = self
                     .current_scope_mut()
                     .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
-                if curr_scope.get(var_name).is_some() {
-                    return Err(AppError::CannotRedeclareVariable(var_name.clone()));
+                if curr_scope.get(&identifier).is_some() {
+                    return Err(AppError::CannotRedeclareVariable(identifier));
                 }
 
-                curr_scope.insert(var_name.clone(), value);
+                curr_scope.insert(identifier, value);
             }
             Statement::KThxBye => {
                 // println!("KTHXBYE")
@@ -342,6 +344,20 @@ impl Interpreter {
             }
         }
         Ok(())
+    }
+
+    fn resolve_identifier_expr(&mut self, ident: &IdentifierExpr) -> Result<Identifier, AppError> {
+        match ident {
+            IdentifierExpr::Identifier(id) => Ok(id.clone()),
+
+            IdentifierExpr::Srs(expr) => {
+                let value = self.eval_expr(expr)?;
+
+                let yarn = value.as_yarn()?;
+
+                Ok(Identifier::new(yarn.to_string())?)
+            }
+        }
     }
 
     fn eval_expr(&self, expr: &Expr) -> Result<Value, AppError> {
