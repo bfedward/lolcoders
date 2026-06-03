@@ -16,7 +16,7 @@ pub enum Statement {
     KThxBye,
     CanHasLib(IdentifierExpr),
     Gimmeh(Identifier),
-    Rassignment(Identifier, Expr),
+    Rassignment(IdentifierExpr, Expr),
     Expr(Expr),
     ORly(ORlyBlock),
 }

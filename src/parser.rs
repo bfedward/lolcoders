@@ -19,6 +19,27 @@ pub fn parse_line(
         return Ok(None);
     }
 
+    // reassignment with R has an unknown number of tokens before and after R,
+    // so handle it specifically instead of in the match statement below.
+    if let Some(r_pos) = tokens.iter().position(|t| *t == Token::Keyword(Keyword::R)) {
+        let lhs = &tokens[..r_pos];
+        let rhs = &tokens[r_pos + 1..];
+
+        let (ident_expr, consumed) = IdentifierExpr::parse(lhs)?;
+
+        if consumed != lhs.len() {
+            return Err(AppError::InvalidIdentifierExpr(Tokens(lhs.to_vec())));
+        }
+
+        let (expr, consumed) = Expr::parse(rhs)?;
+
+        if consumed != rhs.len() {
+            return Err(AppError::InvalidExpression(Tokens(rhs.to_vec())));
+        }
+
+        return Ok(Some(Statement::Rassignment(ident_expr, expr)));
+    }
+
     match tokens {
         [Token::Keyword(Keyword::Hai)] => Err(AppError::MustGiveVersionNumberInHaiLine),
 
@@ -77,7 +98,7 @@ pub fn parse_line(
 
             Ok(Some(Statement::Visible(exprs, no_new_line)))
         }
-        
+
         [
             Token::Keyword(Keyword::I),
             Token::Keyword(Keyword::Has),
@@ -268,16 +289,7 @@ pub fn parse_line(
         [Token::Keyword(Keyword::Gimmeh), Token::Identifier(input)] => {
             Ok(Some(Statement::Gimmeh(input.clone())))
         }
-
-        [
-            Token::Identifier(var),
-            Token::Keyword(Keyword::R),
-            rest @ ..,
-        ] => {
-            let (expr, _) = Expr::parse(rest)?;
-            Ok(Some(Statement::Rassignment(var.clone(), expr)))
-        }
-
+        
         [
             Token::Keyword(Keyword::O),
             Token::Keyword(Keyword::Rly),

@@ -230,16 +230,20 @@ impl Interpreter {
                 return Ok(());
             }
             Statement::Rassignment(var, expr) => {
+                let identifier = self.resolve_identifier_expr(var)?;
+
                 let value = self.eval_expr(expr)?;
                 let curr_scope_mut = self
                     .current_scope_mut()
                     .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
                 let _ = curr_scope_mut
-                    .get(var)
-                    .ok_or(AppError::VariableDoesNotExist(var.clone()))?;
+                    .get(&identifier)
+                    .ok_or(AppError::VariableDoesNotExist(identifier.clone()))?;
 
-                curr_scope_mut.entry(var.clone()).and_modify(|e| *e = value);
+                curr_scope_mut
+                    .entry(identifier.clone())
+                    .and_modify(|e| *e = value);
             }
             Statement::VarRIIzFunc(var_name, func_name, param_values) => {
                 let (func_params, func_statements) = self
