@@ -68,3 +68,9 @@ impl IdentifierExpr {
         }
     }
 }
+
+impl From<Identifier> for IdentifierExpr {
+    fn from(value: Identifier) -> Self {
+        Self::Identifier(value)
+    }
+}

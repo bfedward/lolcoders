@@ -234,6 +234,8 @@ pub fn parse_line(
                 ));
             }
 
+            let var_id = var_name.clone().into();
+
             // Parse first argument, which just has YR <arg>
             args.push(Expr::try_from(&rest[i])?);
             i += 1;
@@ -267,7 +269,7 @@ pub fn parse_line(
             }
 
             Ok(Some(Statement::VarRIIzFunc(
-                var_name.clone(),
+                var_id,
                 called_func.clone(),
                 args,
             )))
@@ -280,16 +282,26 @@ pub fn parse_line(
             Token::Keyword(Keyword::Iz),
             Token::Identifier(called_func),
             Token::Keyword(Keyword::Mkay),
-        ] => Ok(Some(Statement::VarRIIzFunc(
-            var_name.clone(),
-            called_func.clone(),
-            Vec::new(),
-        ))),
+        ] => {
+            let var_id = var_name.clone().into();
 
-        [Token::Keyword(Keyword::Gimmeh), Token::Identifier(input)] => {
-            Ok(Some(Statement::Gimmeh(input.clone())))
+            Ok(Some(Statement::VarRIIzFunc(
+                var_id,
+                called_func.clone(),
+                Vec::new(),
+            )))
         }
-        
+
+        [Token::Keyword(Keyword::Gimmeh), rest @ ..] => {
+            let (gimmeh_id, consumed) = IdentifierExpr::parse(rest)?;
+
+            if consumed != rest.len() {
+                return Err(AppError::InvalidIdentifierExpr(Tokens(tokens.to_vec())));
+            }
+
+            Ok(Some(Statement::Gimmeh(gimmeh_id)))
+        }
+
         [
             Token::Keyword(Keyword::O),
             Token::Keyword(Keyword::Rly),

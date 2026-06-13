@@ -203,13 +203,15 @@ impl Interpreter {
                 return Err(AppError::CannotReturnFromFunctionOutsideFunction);
             }
             Statement::Gimmeh(input_var) => {
+                let identifier = self.resolve_identifier_expr(input_var)?;
+
                 let curr_scope_mut = self
                     .current_scope_mut()
                     .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
                 let _ = curr_scope_mut
-                    .get(input_var)
-                    .ok_or(AppError::VariableDoesNotExist(input_var.clone()))?;
+                    .get(&identifier)
+                    .ok_or(AppError::VariableDoesNotExist(identifier.clone()))?;
 
                 let mut input = String::new();
 
@@ -224,7 +226,7 @@ impl Interpreter {
                 let input = input.trim_end_matches(&['\n', '\r'][..]).to_string();
 
                 curr_scope_mut
-                    .entry(input_var.clone())
+                    .entry(identifier.clone())
                     .and_modify(|e| *e = Value::Yarn(Yarn::new(input)));
 
                 return Ok(());
@@ -246,6 +248,8 @@ impl Interpreter {
                     .and_modify(|e| *e = value);
             }
             Statement::VarRIIzFunc(var_name, func_name, param_values) => {
+                let var_id = self.resolve_identifier_expr(var_name)?;
+
                 let (func_params, func_statements) = self
                     .functions
                     .get(func_name)
@@ -279,11 +283,11 @@ impl Interpreter {
                                 .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
                             let _ = curr_scope_mut
-                                .get(var_name)
-                                .ok_or(AppError::VariableDoesNotExist(var_name.clone()))?;
+                                .get(&var_id)
+                                .ok_or(AppError::VariableDoesNotExist(var_id.clone()))?;
 
                             curr_scope_mut
-                                .entry(var_name.clone())
+                                .entry(var_id.clone())
                                 .and_modify(|e| *e = Value::Noob);
 
                             return Ok(());
@@ -296,11 +300,11 @@ impl Interpreter {
                                 .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
                             let _ = previous_scope
-                                .get(var_name)
-                                .ok_or(AppError::VariableDoesNotExist(var_name.clone()))?;
+                                .get(&var_id)
+                                .ok_or(AppError::VariableDoesNotExist(var_id.clone()))?;
 
                             previous_scope
-                                .entry(var_name.clone())
+                                .entry(var_id.clone())
                                 .and_modify(|e| *e = val);
 
                             // we're exiting a function so pop the current scope
