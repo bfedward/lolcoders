@@ -3,7 +3,7 @@ use crate::{
     keywords::Keyword,
     lexer::{Token, Tokens},
     types::{
-        identifier::Identifier,
+        identifier::IdentifierExpr,
         primitive::{Numbar, Numbr, Troof, Yarn},
     },
 };
@@ -99,8 +99,9 @@ pub enum Expr {
     Numbar(Numbar),
     Numbr(Numbr),
     Yarn(Yarn),
+    Smoosh(Vec<Expr>),
     Troof(Troof),
-    Variable(Identifier),
+    Variable(IdentifierExpr),
     Noob,
     Math(MathsExpr),
     Bool { op: BoolOp, args: Vec<Expr> },
@@ -118,7 +119,7 @@ impl TryFrom<&Token> for Expr {
             Token::Yarn(s) => Ok(Expr::Yarn(s.clone())),
             Token::Troof(b) => Ok(Expr::Troof(b.clone())),
             Token::Noob => Ok(Expr::Noob),
-            Token::Identifier(ident) => Ok(Expr::Variable(ident.clone())),
+            Token::Identifier(ident) => Ok(Expr::Variable(ident.clone().into())),
             Token::Keyword(_) => Err(AppError::TokenCannotBeExpression(token.clone())),
             Token::QuestionMark => Err(AppError::QuestionMarkIsNotAnExpression),
             Token::ExclamationMark => Err(AppError::ExclamationMarkIsNotAnExpression),
@@ -159,6 +160,39 @@ impl Expr {
         }
 
         match tokens.first() {
+            Some(Token::Keyword(Keyword::Srs)) => {
+                let (srs_expr, consumed) = Expr::parse(&tokens[1..])?;
+                Ok((
+                    Expr::Variable(IdentifierExpr::Srs(Box::new(srs_expr))),
+                    consumed + 1,
+                ))
+            }
+
+            Some(Token::Keyword(Keyword::Smoosh)) => {
+                let mut consumed = 1; // start at 1 so we don't try to parse
+                // SMOOSH as part of the first expr.
+
+                let mut expr_vec = Vec::new();
+
+                while consumed < tokens.len() {
+                    if let Some(Token::Keyword(Keyword::Mkay)) = tokens.get(consumed) {
+                        consumed += 1; // need to consume the MKAY!
+                        break;
+                    }
+
+                    let (expr, expr_consumed) = Expr::parse(&tokens[consumed..])?;
+                    consumed += expr_consumed;
+
+                    expr_vec.push(expr);
+
+                    if let Some(Token::Keyword(Keyword::An)) = tokens.get(consumed) {
+                        consumed += 1;
+                    }
+                }
+
+                Ok((Expr::Smoosh(expr_vec), consumed))
+            }
+
             Some(Token::Keyword(Keyword::Not)) => {
                 let (negation, consumed) = Expr::parse(&tokens[1..])?;
                 Ok((Expr::Negation(Box::new(negation)), consumed + 1))

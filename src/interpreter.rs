@@ -354,7 +354,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn resolve_identifier_expr(&mut self, ident: &IdentifierExpr) -> Result<Identifier, AppError> {
+    fn resolve_identifier_expr(&self, ident: &IdentifierExpr) -> Result<Identifier, AppError> {
         match ident {
             IdentifierExpr::Identifier(id) => Ok(id.clone()),
 
@@ -368,18 +368,125 @@ impl Interpreter {
         }
     }
 
+    fn interpolate_yarn(&self, input: &Yarn) -> Result<Yarn, AppError> {
+        let mut result = String::new();
+        let input = input.to_string();
+        let chars: Vec<char> = input.chars().collect();
+        let mut i = 0;
+
+        while i < chars.len() {
+            if chars[i] == ':' && i + 1 < chars.len() {
+                match chars[i + 1] {
+                    '{' => {
+                        let (interpolated, consumed) =
+                            self.interpolate_variable(&chars[i + 2..])?;
+                        result.push_str(&interpolated.to_string());
+                        i += consumed + 2;
+                    }
+                    '(' => {
+                        let (interpolated, consumed) = self.interpolate_hex(&chars[i + 2..])?;
+                        result.push_str(&interpolated.to_string());
+                        i += consumed + 2;
+                    }
+                    '[' => unimplemented!(), //interpolate_char_name(),
+                    _ => {
+                        result.push(chars[i]);
+                        i += 1;
+                    }
+                }
+            } else {
+                result.push(chars[i]);
+                i += 1;
+            }
+        }
+
+        Ok(Yarn::new(result))
+    }
+
+    fn interpolate_variable(&self, chars: &[char]) -> Result<(Value, usize), AppError> {
+        // find closing brace
+        let mut j = 0;
+        while j < chars.len() {
+            if chars[j] == '}' {
+                break;
+            } else {
+                j += 1;
+            }
+        }
+
+        // check if j == chars.len()?? What if we have :{ but no }
+        if j == chars.len() {
+            return Err(AppError::UnclosedInterpolation);
+        }
+
+        let inner: String = chars[..j].iter().collect();
+        let inner = inner.trim();
+
+        let id = Identifier::new(inner.to_owned())?;
+
+        let curr_scope = self
+            .current_scope()
+            .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+        let value = curr_scope.get(&id).cloned().unwrap_or(Value::Noob);
+
+        Ok((value, j + 1))
+    }
+
+    fn interpolate_hex(&self, chars: &[char]) -> Result<(Value, usize), AppError> {
+        // find closing brace
+        let mut j = 0;
+        while j < chars.len() {
+            if chars[j] == ')' {
+                break;
+            } else {
+                j += 1;
+            }
+        }
+
+        // check if j == chars.len()?? What if we have :{ but no }
+        if j == chars.len() {
+            return Err(AppError::UnclosedInterpolation);
+        }
+
+        let inner: String = chars[..j].iter().collect();
+        let inner = inner.trim();
+
+        let codepoint =
+            u32::from_str_radix(inner, 16).map_err(|_| AppError::InvalidUnicodeCodepoint)?;
+        let ch = char::from_u32(codepoint).ok_or(AppError::InvalidUnicodeCodepoint)?;
+
+        Ok((Value::Yarn(Yarn::new(ch.to_string())), j + 1))
+    }
+
     fn eval_expr(&self, expr: &Expr) -> Result<Value, AppError> {
         match expr {
             Expr::Numbar(n) => Ok(Value::Numbar(n.clone())),
             Expr::Numbr(n) => Ok(Value::Numbr(n.clone())),
-            Expr::Yarn(s) => Ok(Value::Yarn(s.clone())),
+            Expr::Yarn(s) => {
+                let interpolated_yarn = self.interpolate_yarn(s)?;
+
+                Ok(Value::Yarn(interpolated_yarn))
+            }
+            Expr::Smoosh(args) => {
+                let mut yarn = Yarn::new(String::new());
+
+                for arg in args {
+                    let v = self.eval_expr(arg)?.as_yarn()?;
+                    yarn.concat(v);
+                }
+
+                Ok(Value::Yarn(yarn))
+            }
             Expr::Troof(b) => Ok(Value::Troof(b.clone())),
             Expr::Variable(name) => {
                 let curr_scope = self
                     .current_scope()
                     .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
 
-                Ok(curr_scope.get(name).cloned().unwrap_or(Value::Noob))
+                let name = self.resolve_identifier_expr(name)?;
+
+                Ok(curr_scope.get(&name).cloned().unwrap_or(Value::Noob))
             }
             Expr::Noob => Ok(Value::Noob),
             Expr::Math(math_expr) => {

@@ -51,6 +51,8 @@ pub enum AppError {
     CanHasMustEndQuestionMark,
     UnexpectedEOF,
     InvalidSyntax(Tokens),
+    UnclosedInterpolation,
+    InvalidUnicodeCodepoint,
 }
 
 impl fmt::Display for AppError {
@@ -187,6 +189,12 @@ impl fmt::Display for AppError {
             }
             AppError::InvalidSyntax(tokens) => {
                 write!(f, "Invalid syntax: {tokens}")
+            }
+            AppError::UnclosedInterpolation => {
+                write!(f, "Unclosed Interpolation")
+            }
+            AppError::InvalidUnicodeCodepoint => {
+                write!(f, "Invalid Unicode codepoint")
             }
         }
     }
