@@ -123,6 +123,10 @@ pub struct Yarn {
 
 impl Yarn {
     pub fn new(v: String) -> Self {
+        Self { value: v }
+    }
+
+    pub fn from_literal(v: String) -> Self {
         let v = if v.starts_with('"') && v.ends_with('"') && v.len() >= 2 {
             &v[1..v.len() - 1]
         } else {
@@ -163,6 +167,7 @@ impl Yarn {
                 result.push(c);
             }
         }
+        // dbg!(&result);
 
         Yarn { value: result }
     }

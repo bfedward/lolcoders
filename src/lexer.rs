@@ -361,7 +361,7 @@ fn classify_token(mut word: String) -> Result<Vec<Token>, AppError> {
 
 fn core_classify_token(word: String) -> Result<Vec<Token>, AppError> {
     if word.starts_with('"') && word.ends_with('"') {
-        return Ok(vec![Token::Yarn(Yarn::new(word))]);
+        return Ok(vec![Token::Yarn(Yarn::from_literal(word))]);
     }
 
     if word == "WIN" {
