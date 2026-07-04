@@ -65,6 +65,7 @@ define_keywords! {
     Itz => "ITZ",
     Iz => "IZ",
     KThxBye => "KTHXBYE",
+    Maek => "MAEK",
     Mebbe => "MEBBE",
     Mkay => "MKAY",
     Mod => "MOD",

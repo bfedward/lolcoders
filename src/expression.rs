@@ -9,6 +9,15 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum CastTypes {
+    Troof,
+    Yarn,
+    Numbr,
+    Numbar,
+    Noob,
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum ComparisonOp {
     BothSaem,
     Diffrint,
@@ -100,6 +109,7 @@ pub enum Expr {
     Numbr(Numbr),
     Yarn(Yarn),
     Smoosh(Vec<Expr>),
+    Maek(Box<Expr>, CastTypes),
     Troof(Troof),
     Variable(IdentifierExpr),
     Noob,
@@ -166,6 +176,27 @@ impl Expr {
                     Expr::Variable(IdentifierExpr::Srs(Box::new(srs_expr))),
                     consumed + 1,
                 ))
+            }
+
+            Some(Token::Keyword(Keyword::Maek)) => {
+                let (maek_expr, consumed) = Expr::parse(&tokens[1..])?;
+
+                let consumed = match tokens.get(1 + consumed) {
+                    Some(Token::Keyword(Keyword::A)) => consumed + 1,
+                    _ => 0,
+                };
+
+                let cast_type = match tokens.get(1 + consumed) {
+                    Some(Token::Keyword(Keyword::Troof)) => CastTypes::Troof,
+                    Some(Token::Keyword(Keyword::Yarn)) => CastTypes::Yarn,
+                    Some(Token::Keyword(Keyword::Numbar)) => CastTypes::Numbar,
+                    Some(Token::Keyword(Keyword::Numbr)) => CastTypes::Numbr,
+                    Some(Token::Keyword(Keyword::Noob)) => CastTypes::Noob,
+                    _ => return Err(AppError::BadMaekCastType),
+                };
+
+                // add 2: one for the cast type + one for the MAEK token
+                Ok((Expr::Maek(Box::new(maek_expr), cast_type), consumed + 2))
             }
 
             Some(Token::Keyword(Keyword::Smoosh)) => {

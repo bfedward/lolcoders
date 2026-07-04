@@ -53,6 +53,7 @@ pub enum AppError {
     InvalidSyntax(Tokens),
     UnclosedInterpolation,
     InvalidUnicodeCodepoint,
+    BadMaekCastType,
 }
 
 impl fmt::Display for AppError {
@@ -195,6 +196,9 @@ impl fmt::Display for AppError {
             }
             AppError::InvalidUnicodeCodepoint => {
                 write!(f, "Invalid Unicode codepoint")
+            }
+            AppError::BadMaekCastType => {
+                write!(f, "Token cannot be a MAEK cast type")
             }
         }
     }

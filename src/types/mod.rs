@@ -19,7 +19,7 @@ pub enum Value {
 }
 
 impl Value {
-    fn as_number(&self) -> Result<Number, AppError> {
+    pub fn as_number(&self) -> Result<Number, AppError> {
         match self {
             Value::Numbr(n) => Ok(Number::from(n)),
 

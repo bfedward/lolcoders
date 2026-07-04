@@ -19,27 +19,6 @@ pub fn parse_line(
         return Ok(None);
     }
 
-    // reassignment with R has an unknown number of tokens before and after R,
-    // so handle it specifically instead of in the match statement below.
-    if let Some(r_pos) = tokens.iter().position(|t| *t == Token::Keyword(Keyword::R)) {
-        let lhs = &tokens[..r_pos];
-        let rhs = &tokens[r_pos + 1..];
-
-        let (ident_expr, consumed) = IdentifierExpr::parse(lhs)?;
-
-        if consumed != lhs.len() {
-            return Err(AppError::InvalidIdentifierExpr(Tokens(lhs.to_vec())));
-        }
-
-        let (expr, consumed) = Expr::parse(rhs)?;
-
-        if consumed != rhs.len() {
-            return Err(AppError::InvalidExpression(Tokens(rhs.to_vec())));
-        }
-
-        return Ok(Some(Statement::Rassignment(ident_expr, expr)));
-    }
-
     match tokens {
         [Token::Keyword(Keyword::Hai)] => Err(AppError::MustGiveVersionNumberInHaiLine),
 
@@ -313,8 +292,33 @@ pub fn parse_line(
 
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
-        // a line of lolcode may just be an expression.
+        
         _ => {
+            // reassignment with R has an unknown number of tokens before and after R,
+            // so handle it specifically instead of in the match statement below.
+            if let Some(r_pos) = tokens.iter().position(|t| *t == Token::Keyword(Keyword::R)) {
+                let lhs = &tokens[..r_pos];
+                let rhs = &tokens[r_pos + 1..];
+
+                let (ident_expr, consumed) = IdentifierExpr::parse(lhs)?;
+
+                if consumed != lhs.len() {
+                    return Err(AppError::InvalidIdentifierExpr(Tokens(lhs.to_vec())));
+                }
+
+                let (expr, consumed) = Expr::parse(rhs)?;
+
+                if consumed != rhs.len() {
+                    return Err(AppError::InvalidExpression(Tokens(rhs.to_vec())));
+                }
+
+                return Ok(Some(Statement::Rassignment(ident_expr, expr)));
+            }
+
+
+
+
+            // a line of lolcode may just be an expression.
             // attempt to parse the whole line as an expression.
             match Expr::parse(tokens) {
                 // if parsing produces an Expr and all line tokens are consumed,

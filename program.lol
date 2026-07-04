@@ -2,7 +2,6 @@ HAI 1.3
 I HAS A VAR ITZ 5.1
 I HAS A nbr ITZ A TROOF
 
-VISIBLE nbr
 VISIBLE VAR
 VISIBLE "hello world"
 VISIBLE 42
@@ -39,15 +38,11 @@ IF U SAY SO
 I HAS A troof_result ITZ A TROOF
 troof_result R I IZ both_win YR WIN AN YR WIN MKAY
 
-VISIBLE troof_result
-
 HOW IZ I is_both_saem YR first AN YR second
     FOUND YR BOTH SAEM first AN second
 IF U SAY SO
 
 I HAS A comp_result ITZ A TROOF
 comp_result R I IZ is_both_saem YR "1" AN YR "1" MKAY
-
-VISIBLE comp_result
 
 KTHXBYE

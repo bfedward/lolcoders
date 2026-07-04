@@ -1,10 +1,10 @@
-use crate::expression::Expr;
+use crate::expression::{CastTypes, Expr};
 use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
 
 use crate::statement::Statement;
 use crate::types::identifier::{Identifier, IdentifierExpr};
-use crate::types::primitive::Yarn;
+use crate::types::primitive::{Numbar, Number, Numbr, Yarn};
 use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
 use crate::{app_error::AppError, types::Value};
 use std::collections::HashMap;
@@ -59,10 +59,13 @@ impl Interpreter {
 
             // // keep this for debugging for now
             // match parse_line(&tokens, &mut lines) {
-            //     Ok(Some(stmt)) => statements.push(stmt),
+            //     Ok(Some(stmt)) => {
+            //         println!("Parsed:   {:?}", &stmt);
+            //         statements.push(stmt)
+            //     },
             //     Ok(None) => (),
             //     Err(e) => {
-            //         println!("{}", Tokens(tokens));
+            //         println!("Error tokens: {}", crate::lexer::Tokens(tokens));
             //         return Err(e);
             //     }
             // }
@@ -100,6 +103,14 @@ impl Interpreter {
 
         for statement in statements {
             self.execute_statement(&statement)?;
+            // match self.execute_statement(&statement) {
+            //     Ok(_) => {
+            //         println!("Executed: {:?}", statement)
+            //     }
+            //     Err(e) => {
+            //         println!("Error: {:?} ----- {e}", &statement);
+            //     }
+            // }
         }
 
         Ok(())
@@ -478,6 +489,32 @@ impl Interpreter {
 
                 Ok(Value::Yarn(yarn))
             }
+            Expr::Maek(expr, cast_type) => {
+                match expr.as_ref() {
+                    Expr::Variable(identifier_expr) => {
+                        let curr_scope = self
+                            .current_scope()
+                            .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                        let identifier = self.resolve_identifier_expr(identifier_expr)?;
+
+                        let value = curr_scope.get(&identifier).cloned().unwrap_or(Value::Noob);
+
+                        // now convert the value to whatever the cast_type is.
+                        let casted = Self::cast_value(&value, cast_type)?;
+
+                        Ok(casted)
+                    }
+                    _ => {
+                        let value = self.eval_expr(expr)?;
+
+                        // now convert the value to whatever the cast_type is.
+                        let casted = Self::cast_value(&value, cast_type)?;
+
+                        Ok(casted)
+                    }
+                }
+            }
             Expr::Troof(b) => Ok(Value::Troof(b.clone())),
             Expr::Variable(name) => {
                 let curr_scope = self
@@ -516,5 +553,35 @@ impl Interpreter {
                 Ok(Value::Troof(inner_troof))
             }
         }
+    }
+
+    fn cast_value(value: &Value, cast_type: &CastTypes) -> Result<Value, AppError> {
+        let casted = match cast_type {
+            CastTypes::Troof => Value::Troof(value.as_troof()),
+            CastTypes::Yarn => Value::Yarn(value.as_yarn()?),
+            CastTypes::Numbr => {
+                let number = value.as_number()?;
+
+                let casted_number = match number {
+                    Number::Int(int) => Numbr::new(int),
+                    Number::Float(float) => Numbr::new(float as i64),
+                };
+
+                Value::Numbr(casted_number)
+            }
+            CastTypes::Numbar => {
+                let number = value.as_number()?;
+
+                let casted_number = match number {
+                    Number::Int(int) => Numbar::new(int as f64),
+                    Number::Float(float) => Numbar::new(float),
+                };
+
+                Value::Numbar(casted_number)
+            }
+            CastTypes::Noob => Value::Noob,
+        };
+
+        Ok(casted)
     }
 }
