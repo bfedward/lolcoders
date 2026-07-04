@@ -285,29 +285,25 @@ impl Expr {
         // SUM + OF = 2 tokens
         // consumed_left = the number of tokens that were consumed in parsing
         // the left side of the SUM.
-        // We expect AN between the left and right sides of the SUM.
-        match tokens.get(2 + consumed_left) {
-            Some(Token::Keyword(Keyword::An)) => {}
-            _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
-        }
+        // The AN is optional between the left and right sides of the SUM.
+        let consumed_an = match tokens.get(2 + consumed_left) {
+            Some(Token::Keyword(Keyword::An)) => 1,
+            _ => 0
+        };
 
-        // SUM + OF + AN = 3 tokens
+        // SUM + OF + AN = 3 tokens (if AN is present, otherwise 2)
         // consumed_left = the number of tokens that were consumed in parsing
         // the left side of the SUM.
         //
         // consumed_right is the number of tokens that are consumed to parse the right
         // side of the SUM, which could be a literal or another nexted expression.
-        let (right, consumed_right) = Expr::parse(&tokens[3 + consumed_left..])?;
+        let (right, consumed_right) = Expr::parse(&tokens[2 + consumed_an + consumed_left..])?;
 
         // We have to use Boxes because Rust needs to know the size of everything on the stack.
         // We use Box because Expr is recursive.
         // Without Box, Expr::Sum(Expr, Expr) would have infinite size at compile time
         // because Expr would contain itself directly.
         // Box gives us a fixed-size pointer on the stack with the actual data on the heap.
-        //
-        // SUM + OF + AN = 3 tokens
-
-        // this would need changed to return MathsExpr::Sum, MathsExpr::Diff and so on
         Ok((
             MathsExpr {
                 op,
@@ -342,12 +338,12 @@ impl Expr {
 
                 let (left, consumed_left) = Expr::parse(&tokens[2..])?;
 
-                match tokens.get(2 + consumed_left) {
-                    Some(Token::Keyword(Keyword::An)) => {}
-                    _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
-                }
+                let consumed_an = match tokens.get(2 + consumed_left) {
+                    Some(Token::Keyword(Keyword::An)) => 1,
+                    _ => 0
+                };
 
-                let (right, consumed_right) = Expr::parse(&tokens[3 + consumed_left..])?;
+                let (right, consumed_right) = Expr::parse(&tokens[2 + consumed_an + consumed_left..])?;
 
                 Ok((op, vec![left, right], 3 + consumed_left + consumed_right))
             }
@@ -393,12 +389,12 @@ impl Expr {
 
         let (left, consumed_left) = Expr::parse(&tokens[consume_from..])?;
 
-        match tokens.get(consume_from + consumed_left) {
-            Some(Token::Keyword(Keyword::An)) => {}
-            _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
-        }
+        let consumed_an = match tokens.get(2 + consumed_left) {
+            Some(Token::Keyword(Keyword::An)) => 1,
+            _ => 0
+        };
 
-        let (right, consumed_right) = Expr::parse(&tokens[consume_from + 1 + consumed_left..])?;
+        let (right, consumed_right) = Expr::parse(&tokens[consume_from + consumed_an + consumed_left..])?;
 
         Ok((
             ComparisonExpr {
