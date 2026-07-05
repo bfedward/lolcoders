@@ -292,7 +292,6 @@ pub fn parse_line(
 
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
 
-        
         _ => {
             // reassignment with R has an unknown number of tokens before and after R,
             // so handle it specifically instead of in the match statement below.
@@ -314,9 +313,6 @@ pub fn parse_line(
 
                 return Ok(Some(Statement::Rassignment(ident_expr, expr)));
             }
-
-
-
 
             // a line of lolcode may just be an expression.
             // attempt to parse the whole line as an expression.

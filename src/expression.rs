@@ -288,7 +288,7 @@ impl Expr {
         // The AN is optional between the left and right sides of the SUM.
         let consumed_an = match tokens.get(2 + consumed_left) {
             Some(Token::Keyword(Keyword::An)) => 1,
-            _ => 0
+            _ => 0,
         };
 
         // SUM + OF + AN = 3 tokens (if AN is present, otherwise 2)
@@ -340,10 +340,11 @@ impl Expr {
 
                 let consumed_an = match tokens.get(2 + consumed_left) {
                     Some(Token::Keyword(Keyword::An)) => 1,
-                    _ => 0
+                    _ => 0,
                 };
 
-                let (right, consumed_right) = Expr::parse(&tokens[2 + consumed_an + consumed_left..])?;
+                let (right, consumed_right) =
+                    Expr::parse(&tokens[2 + consumed_an + consumed_left..])?;
 
                 Ok((op, vec![left, right], 3 + consumed_left + consumed_right))
             }
@@ -354,19 +355,31 @@ impl Expr {
                     _ => return Err(AppError::InvalidExpression(Tokens(tokens.to_vec()))),
                 }
 
-                match tokens.last() {
-                    Some(Token::Keyword(Keyword::Mkay)) => (),
-                    _ => return Err(AppError::TroofExpressionMustEndWithMkay),
-                }
-
                 let mut total_consumed = 2;
                 let mut exprs = Vec::new();
 
-                // len() - 2 because we know MKAY is at the end.
-                while total_consumed < tokens.len() - 2 {
+                loop {
+                    match tokens.get(total_consumed) {
+                        Some(Token::Keyword(Keyword::Mkay)) => {
+                            total_consumed += 1;
+                            break;
+                        }
+                        None => {
+                            return Err(AppError::TroofExpressionMustEndWithMkay);
+                        }
+                        _ => {}
+                    }
+
                     let (expr, consumed) = Expr::parse(&tokens[total_consumed..])?;
                     exprs.push(expr);
                     total_consumed += consumed;
+
+                    if matches!(
+                        tokens.get(total_consumed),
+                        Some(Token::Keyword(Keyword::An))
+                    ) {
+                        total_consumed += 1;
+                    }
                 }
 
                 Ok((op, exprs, total_consumed))
@@ -391,10 +404,11 @@ impl Expr {
 
         let consumed_an = match tokens.get(2 + consumed_left) {
             Some(Token::Keyword(Keyword::An)) => 1,
-            _ => 0
+            _ => 0,
         };
 
-        let (right, consumed_right) = Expr::parse(&tokens[consume_from + consumed_an + consumed_left..])?;
+        let (right, consumed_right) =
+            Expr::parse(&tokens[consume_from + consumed_an + consumed_left..])?;
 
         Ok((
             ComparisonExpr {

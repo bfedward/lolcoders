@@ -222,8 +222,15 @@ pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError>
     }
 
     let res = match op {
-        BoolOp::Both | BoolOp::All | BoolOp::Any => {
+        BoolOp::Both | BoolOp::All => {
             if exprs.iter().all(|t| t.as_troof().value()) {
+                Troof::new(true)
+            } else {
+                Troof::new(false)
+            }
+        }
+        BoolOp::Any => {
+            if exprs.iter().any(|t| t.as_troof().value()) {
                 Troof::new(true)
             } else {
                 Troof::new(false)
