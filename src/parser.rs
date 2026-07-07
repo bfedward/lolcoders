@@ -129,7 +129,6 @@ pub fn parse_line(
             Token::Keyword(Keyword::How),
             Token::Keyword(Keyword::Iz),
             Token::Keyword(Keyword::I),
-            Token::Identifier(_),
             ..,
         ] => {
             let func = parse_function(tokens, lines)?;
@@ -139,59 +138,57 @@ pub fn parse_line(
         [
             Token::Keyword(Keyword::I),
             Token::Keyword(Keyword::Iz),
-            Token::Identifier(called_func),
-            Token::Keyword(Keyword::Mkay),
-        ] => Ok(Some(Statement::IIz(called_func.clone(), Vec::new()))),
-
-        [
-            Token::Keyword(Keyword::I),
-            Token::Keyword(Keyword::Iz),
-            Token::Identifier(called_func),
-            Token::Keyword(Keyword::Yr),
             rest @ ..,
         ] => {
-            let mut args = Vec::new();
-            let mut i = 0;
-
-            if rest.is_empty() {
-                return Err(AppError::IncorrectFunctionArguments(
-                    called_func.clone(),
-                    Tokens(tokens.to_vec()),
-                ));
-            }
-
-            // Parse first argument, which just has YR <arg>
-            args.push(Expr::try_from(&rest[i])?);
-            i += 1;
-
-            // remaining args, which have AN YR <arg>
-            while i < rest.len() {
-                match rest.get(i..i + 3) {
-                    Some(
-                        [
-                            Token::Keyword(Keyword::An),
-                            Token::Keyword(Keyword::Yr),
-                            expr_token,
-                        ],
-                    ) => {
-                        args.push(Expr::try_from(expr_token)?);
-                        i += 3;
-                    }
-                    _ => {
-                        return Err(AppError::IncorrectFunctionArguments(
-                            called_func.clone(),
-                            Tokens(tokens.to_vec()),
-                        ));
-                    }
-                }
-            }
-
             match rest.last() {
                 Some(Token::Keyword(Keyword::Mkay)) => (),
                 _ => return Err(AppError::FunctionArgumentsMustEndWithMkay),
             }
 
-            Ok(Some(Statement::IIz(called_func.clone(), args)))
+            let mut total_consumed = 2; // I IZ
+
+            // the func_name could be a literal function name, or SRS SMOOSH etc
+            let (func_name, consumed) = IdentifierExpr::parse(&tokens[total_consumed..])?;
+            total_consumed += consumed;
+
+            // there may be no function parameters.
+            // if there are function parameters, expect YR first.
+            // Minus 1 because we know MKAY is at the end.
+            let func_has_params = total_consumed != tokens.len() - 1;
+
+            let params = if !func_has_params {
+                Vec::new()
+            } else {
+                match tokens.get(total_consumed) {
+                    Some(Token::Keyword(Keyword::Yr)) => {
+                        total_consumed += 1;
+                    }
+                    _ => return Err(AppError::FunctionParseError),
+                }
+
+                let mut params = Vec::new();
+
+                if total_consumed < tokens.len() {
+                    loop {
+                        let (param, consumed) = Expr::parse(&tokens[total_consumed..])?;
+
+                        params.push(param);
+                        total_consumed += consumed;
+
+                        match tokens.get(total_consumed) {
+                            Some(Token::Keyword(Keyword::An)) => {
+                                total_consumed += 1;
+                            }
+                            Some(Token::Keyword(Keyword::Mkay)) => break,
+                            _ => return Err(AppError::FunctionParseError),
+                        }
+                    }
+                }
+
+                params
+            };
+
+            Ok(Some(Statement::IIz(func_name, params)))
         }
 
         [
@@ -333,65 +330,54 @@ pub fn parse_function(
     tokens: &[Token],
     lines: &mut Peekable<std::str::Lines>,
 ) -> Result<Statement, AppError> {
-    let (func_name, params) = match tokens {
-        [
-            Token::Keyword(Keyword::How),
-            Token::Keyword(Keyword::Iz),
-            Token::Keyword(Keyword::I),
-            Token::Identifier(func_name),
-        ] => (func_name, Vec::new()),
+    if !tokens.starts_with(&[
+        Token::Keyword(Keyword::How),
+        Token::Keyword(Keyword::Iz),
+        Token::Keyword(Keyword::I),
+    ]) {
+        return Err(AppError::FunctionParseError);
+    }
 
-        [
-            Token::Keyword(Keyword::How),
-            Token::Keyword(Keyword::Iz),
-            Token::Keyword(Keyword::I),
-            Token::Identifier(func_name),
-            Token::Keyword(Keyword::Yr),
-            rest @ ..,
-        ] => {
-            let mut params = Vec::new();
-            let mut i = 0;
+    let mut total_consumed = 3; // HOW IZ I
 
-            // First param
-            match rest.get(i) {
-                Some(Token::Identifier(param)) => {
-                    params.push(param.clone());
-                    i += 1;
-                }
-                _ => {
-                    return Err(AppError::IncorrectFunctionArguments(
-                        func_name.clone(),
-                        Tokens(tokens.to_vec()),
-                    ));
-                }
+    // the func_name could be a literal function name, or SRS SMOOSH etc
+    let (func_name, consumed) = IdentifierExpr::parse(&tokens[total_consumed..])?;
+    total_consumed += consumed;
+
+    // there may be no function parameters.
+    // if there are function parameters, expect YR first.
+    let func_has_params = total_consumed != tokens.len();
+
+    let params = if !func_has_params {
+        Vec::new()
+    } else {
+        match tokens.get(total_consumed) {
+            Some(Token::Keyword(Keyword::Yr)) => {
+                total_consumed += 1;
             }
-
-            // Remaining params: AN YR <param>
-            while i < rest.len() {
-                match rest.get(i..i + 3) {
-                    Some(
-                        [
-                            Token::Keyword(Keyword::An),
-                            Token::Keyword(Keyword::Yr),
-                            Token::Identifier(param),
-                        ],
-                    ) => {
-                        params.push(param.clone());
-                        i += 3;
-                    }
-                    _ => {
-                        return Err(AppError::IncorrectFunctionArguments(
-                            func_name.clone(),
-                            Tokens(tokens.to_vec()),
-                        ));
-                    }
-                }
-            }
-
-            (func_name, params)
+            _ => return Err(AppError::FunctionParseError),
         }
 
-        _ => return Err(AppError::FunctionParseError),
+        let mut params = Vec::new();
+
+        if total_consumed < tokens.len() {
+            loop {
+                let (param, consumed) = IdentifierExpr::parse(&tokens[total_consumed..])?;
+
+                params.push(param);
+                total_consumed += consumed;
+
+                match tokens.get(total_consumed) {
+                    Some(Token::Keyword(Keyword::An)) => {
+                        total_consumed += 1;
+                    }
+                    None => break,
+                    _ => return Err(AppError::FunctionParseError),
+                }
+            }
+        }
+
+        params
     };
 
     let mut body = Vec::new();

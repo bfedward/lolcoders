@@ -93,14 +93,6 @@ impl Interpreter {
             }
         }
 
-        // register all the functions so they can be called before their declaration
-        for stmt in &statements {
-            if let Statement::HowIzI(name, params, body) = stmt {
-                self.functions
-                    .insert(name.clone(), (params.clone(), body.clone()));
-            }
-        }
-
         for statement in statements {
             self.execute_statement(&statement)?;
             // match self.execute_statement(&statement) {
@@ -167,13 +159,19 @@ impl Interpreter {
             Statement::KThxBye => {
                 // println!("KTHXBYE")
             }
-            Statement::HowIzI(_, _, _) => {
-                // functions are already registered.
+            Statement::HowIzI(name, params, body) => {
+                let id = self.resolve_identifier_expr(name)?;
+                let params: Vec<Identifier> = params
+                    .iter()
+                    .map(|p| self.resolve_identifier_expr(p))
+                    .collect::<Result<Vec<Identifier>, AppError>>()?;
+                self.functions.insert(id, (params, body.clone()));
             }
             Statement::IIz(func_name, param_values) => {
+                let func_name = self.resolve_identifier_expr(func_name)?;
                 let (func_params, func_statements) = self
                     .functions
-                    .get(func_name)
+                    .get(&func_name)
                     .cloned()
                     .ok_or_else(|| AppError::FunctionDoesNotExist(func_name.clone()))?;
 
@@ -517,13 +515,9 @@ impl Interpreter {
             }
             Expr::Troof(b) => Ok(Value::Troof(b.clone())),
             Expr::Variable(name) => {
-                let curr_scope = self
-                    .current_scope()
-                    .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
-
                 let name = self.resolve_identifier_expr(name)?;
 
-                Ok(curr_scope.get(&name).cloned().unwrap_or(Value::Noob))
+                Ok(self.lookup_variable(&name).cloned().unwrap_or(Value::Noob))
             }
             Expr::Noob => Ok(Value::Noob),
             Expr::Math(math_expr) => {
@@ -583,5 +577,12 @@ impl Interpreter {
         };
 
         Ok(casted)
+    }
+
+    fn lookup_variable(&self, name: &Identifier) -> Option<&Value> {
+        self.variables
+            .iter()
+            .rev() // check the local scope, then the previous scopes.
+            .find_map(|scope| scope.get(name))
     }
 }

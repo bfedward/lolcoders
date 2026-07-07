@@ -55,10 +55,6 @@ impl IdentifierExpr {
             [Token::Keyword(Keyword::Srs), rest @ ..] => {
                 let (expr, consumed) = Expr::parse(rest)?;
 
-                if consumed != rest.len() {
-                    return Err(AppError::InvalidExpression(Tokens(tokens.to_vec())));
-                }
-
                 Ok((IdentifierExpr::Srs(Box::new(expr)), consumed + 1))
             }
 
