@@ -1,3 +1,5 @@
+use bigdecimal::ToPrimitive;
+
 use crate::expression::{CastTypes, Expr};
 use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
@@ -558,7 +560,12 @@ impl Interpreter {
 
                 let casted_number = match number {
                     Number::Int(int) => Numbr::new(int),
-                    Number::Float(float) => Numbr::new(float as i64),
+
+                    Number::Decimal(decimal) => {
+                        let int = decimal.to_i64().ok_or(AppError::NumberOverflow)?;
+
+                        Numbr::new(int)
+                    }
                 };
 
                 Value::Numbr(casted_number)
@@ -567,8 +574,8 @@ impl Interpreter {
                 let number = value.as_number()?;
 
                 let casted_number = match number {
-                    Number::Int(int) => Numbar::new(int as f64),
-                    Number::Float(float) => Numbar::new(float),
+                    Number::Int(int) => Numbar::new(int.into()),
+                    Number::Decimal(float) => Numbar::new(float),
                 };
 
                 Value::Numbar(casted_number)

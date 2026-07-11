@@ -43,7 +43,7 @@ pub fn parse_line(
         }
 
         [Token::Keyword(Keyword::Hai), Token::Numbar(version)] => {
-            Ok(Some(Statement::Hai(version.value())))
+            Ok(Some(Statement::Hai(version.value().clone())))
         }
 
         [Token::Keyword(Keyword::Visible), rest @ ..] => {

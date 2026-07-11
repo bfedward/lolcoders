@@ -1,5 +1,7 @@
 use std::fmt;
 
+use bigdecimal::{BigDecimal, Zero};
+
 use crate::{
     app_error::AppError,
     expression::{BoolOp, ComparisonExpr, ComparisonOp, MathOp, MathsExpr},
@@ -127,23 +129,27 @@ pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Valu
             match (l, r) {
                 (Number::Int(_), Number::Int(0)) => Err(AppError::DivisionByZero),
 
-                (Number::Int(a), Number::Int(b)) => {
-                    Ok(Value::Numbar(Numbar::new(a as f64 / b as f64)))
+                (Number::Int(a), Number::Int(b)) => Ok(Value::Numbar(Numbar::new(
+                    BigDecimal::from(a) / BigDecimal::from(b),
+                ))),
+
+                (Number::Int(a), Number::Decimal(b)) => {
+                    Ok(Value::Numbar(Numbar::new(a as f64 / b)))
                 }
 
-                (Number::Int(a), Number::Float(b)) => Ok(Value::Numbar(Numbar::new(a as f64 / b))),
+                (Number::Decimal(a), Number::Int(b)) => {
+                    Ok(Value::Numbar(Numbar::new(a / b as f64)))
+                }
 
-                (Number::Float(a), Number::Int(b)) => Ok(Value::Numbar(Numbar::new(a / b as f64))),
-
-                (Number::Float(a), Number::Float(b)) => Ok(Value::Numbar(Numbar::new(a / b))),
+                (Number::Decimal(a), Number::Decimal(b)) => Ok(Value::Numbar(Numbar::new(a / b))),
             }
         }
 
         MathOp::Mod => apply_numeric_op(left, right, |a, b| Some(a % b), |a, b| a % b),
 
-        MathOp::Biggr => apply_numeric_op(left, right, |a, b| Some(a.max(b)), f64::max),
+        MathOp::Biggr => apply_numeric_op(left, right, |a, b| Some(a.max(b)), BigDecimal::max),
 
-        MathOp::Smallr => apply_numeric_op(left, right, |a, b| Some(a.min(b)), f64::min),
+        MathOp::Smallr => apply_numeric_op(left, right, |a, b| Some(a.min(b)), BigDecimal::min),
     }
 }
 
@@ -155,7 +161,7 @@ fn apply_numeric_op<X, Y>(
 ) -> Result<Value, AppError>
 where
     X: Fn(i64, i64) -> Option<i64>,
-    Y: Fn(f64, f64) -> f64,
+    Y: Fn(BigDecimal, BigDecimal) -> BigDecimal,
 {
     let l = left.as_number()?;
     let r = right.as_number()?;
@@ -166,17 +172,11 @@ where
             Number::Int(res)
         }
 
-        (Number::Int(a), Number::Float(b)) => {
-            Number::Float(check_float_overflow(float_op(a as f64, b))?)
-        }
+        (Number::Int(a), Number::Decimal(b)) => Number::Decimal(float_op(a.into(), b)),
 
-        (Number::Float(a), Number::Int(b)) => {
-            Number::Float(check_float_overflow(float_op(a, b as f64))?)
-        }
+        (Number::Decimal(a), Number::Int(b)) => Number::Decimal(float_op(a, b.into())),
 
-        (Number::Float(a), Number::Float(b)) => {
-            Number::Float(check_float_overflow(float_op(a, b))?)
-        }
+        (Number::Decimal(a), Number::Decimal(b)) => Number::Decimal(float_op(a, b)),
     };
 
     Ok(result.into_value())
@@ -185,19 +185,9 @@ where
 fn check_zero(n: &Number) -> bool {
     match n {
         Number::Int(0) => true,
-        Number::Float(f) => *f == 0.0,
+        Number::Decimal(f) => *f == BigDecimal::zero(),
         _ => false,
     }
-}
-
-fn check_float_overflow(f: f64) -> Result<f64, AppError> {
-    if f.is_infinite() {
-        return Err(AppError::NumberOverflow);
-    }
-    if f.is_nan() {
-        return Err(AppError::NumberOverflow);
-    }
-    Ok(f)
 }
 
 pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError> {

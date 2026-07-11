@@ -1,3 +1,5 @@
+use bigdecimal::BigDecimal;
+
 use crate::{
     expression::Expr,
     types::identifier::{Identifier, IdentifierExpr},
@@ -5,7 +7,7 @@ use crate::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Statement {
-    Hai(f64),
+    Hai(BigDecimal),
     Visible(Vec<Expr>, bool),
     IHasA(IdentifierExpr, Expr),
     HowIzI(IdentifierExpr, Vec<IdentifierExpr>, Vec<Statement>),

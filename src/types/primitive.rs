@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use std::str::FromStr;
 
+use bigdecimal::{BigDecimal, Zero};
+
 use crate::app_error::AppError;
 use crate::types::Value;
 
@@ -9,21 +11,21 @@ use crate::types::Value;
 // generic maths logic.
 pub enum Number {
     Int(i64),
-    Float(f64),
+    Decimal(BigDecimal),
 }
 
 impl Number {
     pub fn into_value(self) -> Value {
         match self {
             Number::Int(i) => Value::Numbr(Numbr::new(i)),
-            Number::Float(f) => Value::Numbar(Numbar::new(f)),
+            Number::Decimal(f) => Value::Numbar(Numbar::new(f)),
         }
     }
 }
 
 impl From<&Numbar> for Number {
     fn from(value: &Numbar) -> Self {
-        Number::Float(value.value)
+        Number::Decimal(value.value.clone())
     }
 }
 
@@ -33,24 +35,30 @@ impl From<&Numbr> for Number {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct Numbar {
-    value: f64,
+    value: BigDecimal,
 }
 
 impl Numbar {
-    pub fn new(v: f64) -> Self {
+    pub fn new(v: BigDecimal) -> Self {
         Numbar { value: v }
     }
 
-    pub fn value(&self) -> f64 {
-        self.value
+    pub fn value(&self) -> &BigDecimal {
+        &self.value
+    }
+
+    fn truncated(&self) -> BigDecimal {
+        let multiplier = BigDecimal::from(100);
+
+        (&self.value * &multiplier).with_scale(0) / multiplier
     }
 }
 
 impl Display for Numbar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.2}", ((self.value * 100.0) + 1e-9).trunc() / 100.0)
+        write!(f, "{:.2}", self.truncated())
     }
 }
 
@@ -58,22 +66,16 @@ impl TryFrom<Yarn> for Numbar {
     type Error = AppError;
 
     fn try_from(value: Yarn) -> Result<Self, Self::Error> {
-        let num =
-            f64::from_str(value.value.as_str()).map_err(|_| AppError::YarnIsNotANumbar(value))?;
+        let num = BigDecimal::from_str(value.value.as_str())
+            .map_err(|_| AppError::YarnIsNotANumbar(value))?;
 
         Ok(Numbar::new(num))
     }
 }
 
-impl PartialEq for Numbar {
-    fn eq(&self, other: &Numbar) -> bool {
-        self.value == other.value
-    }
-}
-
 impl PartialEq<Numbr> for Numbar {
     fn eq(&self, other: &Numbr) -> bool {
-        self.value == other.value as f64
+        self.value == other.value
     }
 }
 
@@ -112,7 +114,7 @@ impl PartialEq for Numbr {
 
 impl PartialEq<Numbar> for Numbr {
     fn eq(&self, other: &Numbar) -> bool {
-        self.value as f64 == other.value
+        &BigDecimal::from(self.value) == other.value()
     }
 }
 
@@ -225,7 +227,7 @@ impl Display for Troof {
 
 impl From<Numbar> for Troof {
     fn from(value: Numbar) -> Self {
-        if value.value == 0.0 {
+        if value.value == BigDecimal::zero() {
             Troof::new(false)
         } else {
             Troof::new(true)
@@ -258,7 +260,7 @@ impl From<Yarn> for Troof {
         // Then float
         let float: Result<Numbar, AppError> = value.clone().try_into();
         if let Ok(float) = float {
-            return Troof::new(float.value != 0.0);
+            return Troof::new(float.value != BigDecimal::zero());
         }
 
         Troof::new(true)

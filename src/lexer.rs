@@ -1,4 +1,6 @@
-use std::fmt;
+use std::{fmt, str::FromStr};
+
+use bigdecimal::BigDecimal;
 
 use crate::{
     app_error::AppError,
@@ -379,7 +381,7 @@ fn core_classify_token(word: String) -> Result<Vec<Token>, AppError> {
         return Ok(vec![Token::Numbr(Numbr::new(n))]);
     }
 
-    if let Ok(n) = word.parse::<f64>() {
+    if let Ok(n) = BigDecimal::from_str(&word) {
         return Ok(vec![Token::Numbar(Numbar::new(n))]);
     }
 
