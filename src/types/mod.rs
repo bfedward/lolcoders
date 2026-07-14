@@ -1,4 +1,7 @@
-use std::fmt;
+use std::{
+    fmt,
+    ops::{Add, Mul, Sub},
+};
 
 use bigdecimal::{BigDecimal, Zero};
 
@@ -28,16 +31,14 @@ impl Value {
             Value::Numbar(n) => Ok(Number::from(n)),
 
             Value::Yarn(y) => {
-                // Try integer first
-                let int: Result<Numbr, AppError> = y.clone().try_into();
-                if let Ok(int) = int {
-                    return Ok(Number::from(&int));
-                }
-
-                // Then float
                 let float: Result<Numbar, AppError> = y.clone().try_into();
                 if let Ok(float) = float {
                     return Ok(Number::from(&float));
+                }
+
+                let int: Result<Numbr, AppError> = y.clone().try_into();
+                if let Ok(int) = int {
+                    return Ok(Number::from(&int));
                 }
 
                 Err(AppError::YarnIsNotANumber(y.clone()))
@@ -113,11 +114,11 @@ pub fn eval_comparison_expr(
 
 pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Value, AppError> {
     match op.op {
-        MathOp::Sum => apply_numeric_op(left, right, i64::checked_add, |a, b| a + b),
+        MathOp::Sum => apply_numeric_op(left, right, i64::checked_add, BigDecimal::add),
 
-        MathOp::Diff => apply_numeric_op(left, right, i64::checked_sub, |a, b| a - b),
+        MathOp::Diff => apply_numeric_op(left, right, i64::checked_sub, BigDecimal::sub),
 
-        MathOp::Produkt => apply_numeric_op(left, right, i64::checked_mul, |a, b| a * b),
+        MathOp::Produkt => apply_numeric_op(left, right, i64::checked_mul, BigDecimal::mul),
         MathOp::Quoshunt => {
             let l = left.as_number()?;
             let r = right.as_number()?;

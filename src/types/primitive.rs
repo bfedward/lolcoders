@@ -94,9 +94,7 @@ impl TryFrom<Yarn> for Numbr {
     type Error = AppError;
 
     fn try_from(value: Yarn) -> Result<Self, Self::Error> {
-        let num = i64::from_str(&value.value).map_err(|_| AppError::YarnIsNotANumbr(value))?;
-
-        Ok(Numbr::new(num))
+        Ok(Numbr::new(parse_numbr_prefix(&value.value)?))
     }
 }
 
@@ -265,4 +263,31 @@ impl From<Yarn> for Troof {
 
         Troof::new(true)
     }
+}
+
+fn parse_numbr_prefix(input: &str) -> Result<i64, AppError> {
+    let input = input.trim_start();
+
+    let (radix, digits) = {
+        if input.starts_with("0x") || input.starts_with("0X") {
+            (16, &input[2..])
+        } else if let Some(stripped) = input.strip_prefix('0') {
+            (8, stripped)
+        } else {
+            (10, input)
+        }
+    };
+
+    let mut numeric = String::new();
+
+    for c in digits.chars() {
+        if c.is_digit(radix) {
+            numeric.push(c);
+        } else {
+            break;
+        }
+    }
+
+    i64::from_str_radix(&numeric, radix)
+        .map_err(|_| AppError::YarnIsNotANumbr(Yarn::new(input.to_owned())))
 }

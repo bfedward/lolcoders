@@ -19,7 +19,6 @@ pub enum Token {
     Numbr(Numbr),
     Numbar(Numbar),
     Troof(Troof),
-    Noob,
     QuestionMark,
     ExclamationMark,
 }
@@ -27,13 +26,13 @@ pub enum Token {
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Token::Keyword(Keyword::Noob) => write!(f, "NOOB"),
             Token::Keyword(k) => write!(f, "{k}"),
             Token::Identifier(id) => write!(f, "{id}"),
             Token::Yarn(s) => write!(f, "\"{s}\""),
             Token::Numbr(n) => write!(f, "{n}"),
             Token::Numbar(n) => write!(f, "{n}"),
             Token::Troof(b) => write!(f, "{}", if b.value() { "WIN" } else { "FAIL" }),
-            Token::Noob => write!(f, "NOOB"),
             Token::QuestionMark => write!(f, "?"),
             Token::ExclamationMark => write!(f, "!"),
         }
@@ -374,7 +373,7 @@ fn core_classify_token(word: String) -> Result<Vec<Token>, AppError> {
     }
 
     if word == "NOOB" {
-        return Ok(vec![Token::Noob]);
+        return Ok(vec![Token::Keyword(Keyword::Noob)]);
     }
 
     if let Ok(n) = word.parse::<i64>() {
