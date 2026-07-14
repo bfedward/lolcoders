@@ -23,6 +23,12 @@ impl Number {
     }
 }
 
+impl Default for Number {
+    fn default() -> Self {
+        Number::Int(0)
+    }
+}
+
 impl From<&Numbar> for Number {
     fn from(value: &Numbar) -> Self {
         Number::Decimal(value.value.clone())

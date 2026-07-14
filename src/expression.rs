@@ -192,7 +192,7 @@ impl Expr {
                     Some(Token::Keyword(Keyword::Numbar)) => CastTypes::Numbar,
                     Some(Token::Keyword(Keyword::Numbr)) => CastTypes::Numbr,
                     Some(Token::Keyword(Keyword::Noob)) => CastTypes::Noob,
-                    _ => return Err(AppError::BadMaekCastType),
+                    _ => return Err(AppError::BadCastType),
                 };
 
                 // add 2: one for the cast type + one for the MAEK token

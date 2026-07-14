@@ -1,6 +1,6 @@
 use crate::{
     app_error::AppError,
-    expression::Expr,
+    expression::{CastTypes, Expr},
     keywords::Keyword,
     lexer::{Token, Tokens, tokenize_line},
     statement::{MebbeBlock, ORlyBlock, Statement},
@@ -309,6 +309,47 @@ pub fn parse_line(
                 }
 
                 return Ok(Some(Statement::Rassignment(ident_expr, expr)));
+            }
+
+            // conversion can also have an unknown number of tokens before IS NOW A
+            if let Some(is_pos) = tokens.windows(3).position(|w| {
+                matches!(
+                    w,
+                    [
+                        Token::Keyword(Keyword::Is),
+                        Token::Keyword(Keyword::Now),
+                        Token::Keyword(Keyword::A),
+                    ]
+                )
+            }) {
+                if tokens.len() != is_pos + 4 {
+                    return Err(AppError::BadConversionStatement);
+                }
+                
+                let id = &tokens[..is_pos];
+
+                let (ident_expr, consumed) = IdentifierExpr::parse(id)?;
+
+                if consumed != id.len() {
+                    return Err(AppError::InvalidIdentifierExpr(Tokens(id.to_vec())));
+                }
+
+                let cast_type = match tokens.last() {
+                    Some(cast) => match cast {
+                        Token::Keyword(Keyword::Troof) => CastTypes::Troof,
+                        Token::Keyword(Keyword::Yarn) => CastTypes::Yarn,
+                        Token::Keyword(Keyword::Numbar) => CastTypes::Numbar,
+                        Token::Keyword(Keyword::Numbr) => CastTypes::Numbr,
+                        Token::Keyword(Keyword::Noob) => CastTypes::Noob,
+                        _ => return Err(AppError::BadCastType),
+                    },
+                    None => return Err(AppError::BadCastType),
+                };
+
+                return Ok(Some(Statement::Expr(Expr::Maek(
+                    Box::from(Expr::Variable(ident_expr)),
+                    cast_type,
+                ))));
             }
 
             // a line of lolcode may just be an expression.

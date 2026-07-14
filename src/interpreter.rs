@@ -6,7 +6,7 @@ use crate::parser::parse_line;
 
 use crate::statement::Statement;
 use crate::types::identifier::{Identifier, IdentifierExpr};
-use crate::types::primitive::{Numbar, Number, Numbr, Yarn};
+use crate::types::primitive::{Numbar, Number, Numbr, Troof, Yarn};
 use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
 use crate::{app_error::AppError, types::Value};
 use std::collections::HashMap;
@@ -500,8 +500,17 @@ impl Interpreter {
 
                         let value = curr_scope.get(&identifier).cloned().unwrap_or(Value::Noob);
 
-                        // now convert the value to whatever the cast_type is.
-                        let casted = Self::cast_value(&value, cast_type)?;
+                        let casted = if matches!(value, Value::Noob) {
+                            match cast_type {
+                                CastTypes::Troof => Value::Troof(Troof::default()),
+                                CastTypes::Yarn => Value::Yarn(Yarn::default()),
+                                CastTypes::Numbr => Value::Numbr(Numbr::default()),
+                                CastTypes::Numbar => Value::Numbar(Numbar::default()),
+                                CastTypes::Noob => Value::Noob,
+                            }
+                        } else {
+                            Self::cast_value(&value, cast_type)?
+                        };
 
                         Ok(casted)
                     }
@@ -556,7 +565,7 @@ impl Interpreter {
             CastTypes::Troof => Value::Troof(value.as_troof()),
             CastTypes::Yarn => Value::Yarn(value.as_yarn()?),
             CastTypes::Numbr => {
-                let number = value.as_number()?;
+                let number = value.as_number().unwrap_or_default();
 
                 let casted_number = match number {
                     Number::Int(int) => Numbr::new(int),
