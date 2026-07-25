@@ -117,6 +117,7 @@ pub enum Expr {
     Bool { op: BoolOp, args: Vec<Expr> },
     Comparison(ComparisonExpr),
     Negation(Box<Expr>),
+    FunctionCall(IdentifierExpr, Vec<Expr>),
 }
 
 impl TryFrom<&Token> for Expr {
@@ -167,6 +168,67 @@ impl Expr {
                 return Ok((Expr::Bool { op, args: exprs }, consumed));
             }
             _ => (),
+        }
+
+        // function calls
+        if matches!(
+            tokens,
+            [Token::Keyword(Keyword::I), Token::Keyword(Keyword::Iz), ..]
+        ) {
+            match tokens.last() {
+                Some(Token::Keyword(Keyword::Mkay)) => (),
+                _ => return Err(AppError::FunctionArgumentsMustEndWithMkay),
+            }
+
+            let mut total_consumed = 2; // I IZ
+
+            // the func_name could be a literal function name, or SRS SMOOSH etc
+            let (func_name, consumed) = IdentifierExpr::parse(&tokens[total_consumed..])?;
+            total_consumed += consumed;
+
+            // there may be no function parameters.
+            // if there are function parameters, expect YR first.
+            // Minus 1 because we know MKAY is at the end.
+            let func_has_params = total_consumed != tokens.len() - 1;
+
+            let params = if !func_has_params {
+                Vec::new()
+            } else {
+                match tokens.get(total_consumed) {
+                    Some(Token::Keyword(Keyword::Yr)) => {
+                        total_consumed += 1;
+                    }
+                    _ => return Err(AppError::FunctionParseError),
+                }
+
+                let mut params = Vec::new();
+
+                if total_consumed < tokens.len() {
+                    loop {
+                        let (param, consumed) = Expr::parse(&tokens[total_consumed..])?;
+
+                        params.push(param);
+                        total_consumed += consumed;
+
+                        match (tokens.get(total_consumed), tokens.get(total_consumed + 1)) {
+                            (
+                                Some(Token::Keyword(Keyword::An)),
+                                Some(Token::Keyword(Keyword::Yr)),
+                            ) => {
+                                total_consumed += 2;
+                            }
+                            (Some(Token::Keyword(Keyword::Mkay)), None) => break,
+                            _ => return Err(AppError::FunctionParseError),
+                        }
+                    }
+                }
+
+                params
+            };
+
+            total_consumed += 1; // MKAY
+
+            return Ok((Expr::FunctionCall(func_name, params), total_consumed));
         }
 
         match tokens.first() {

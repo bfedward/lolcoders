@@ -131,66 +131,9 @@ pub fn parse_line(
             Token::Keyword(Keyword::I),
             ..,
         ] => {
-            let func = parse_function(tokens, lines)?;
+            let func = parse_function_declaration(tokens, lines)?;
             Ok(Some(func))
         }
-
-        [
-            Token::Keyword(Keyword::I),
-            Token::Keyword(Keyword::Iz),
-            rest @ ..,
-        ] => {
-            match rest.last() {
-                Some(Token::Keyword(Keyword::Mkay)) => (),
-                _ => return Err(AppError::FunctionArgumentsMustEndWithMkay),
-            }
-
-            let mut total_consumed = 2; // I IZ
-
-            // the func_name could be a literal function name, or SRS SMOOSH etc
-            let (func_name, consumed) = IdentifierExpr::parse(&tokens[total_consumed..])?;
-            total_consumed += consumed;
-
-            // there may be no function parameters.
-            // if there are function parameters, expect YR first.
-            // Minus 1 because we know MKAY is at the end.
-            let func_has_params = total_consumed != tokens.len() - 1;
-
-            let params = if !func_has_params {
-                Vec::new()
-            } else {
-                match tokens.get(total_consumed) {
-                    Some(Token::Keyword(Keyword::Yr)) => {
-                        total_consumed += 1;
-                    }
-                    _ => return Err(AppError::FunctionParseError),
-                }
-
-                let mut params = Vec::new();
-
-                if total_consumed < tokens.len() {
-                    loop {
-                        let (param, consumed) = Expr::parse(&tokens[total_consumed..])?;
-
-                        params.push(param);
-                        total_consumed += consumed;
-
-                        match tokens.get(total_consumed) {
-                            Some(Token::Keyword(Keyword::An)) => {
-                                total_consumed += 1;
-                            }
-                            Some(Token::Keyword(Keyword::Mkay)) => break,
-                            _ => return Err(AppError::FunctionParseError),
-                        }
-                    }
-                }
-
-                params
-            };
-
-            Ok(Some(Statement::IIz(func_name, params)))
-        }
-
         [
             Token::Identifier(var_name),
             Token::Keyword(Keyword::R),
@@ -364,7 +307,7 @@ pub fn parse_line(
     }
 }
 
-pub fn parse_function(
+pub fn parse_function_declaration(
     tokens: &[Token],
     lines: &mut Peekable<std::str::Lines>,
 ) -> Result<Statement, AppError> {
@@ -405,11 +348,11 @@ pub fn parse_function(
                 params.push(param);
                 total_consumed += consumed;
 
-                match tokens.get(total_consumed) {
-                    Some(Token::Keyword(Keyword::An)) => {
-                        total_consumed += 1;
+                match (tokens.get(total_consumed), tokens.get(total_consumed + 1)) {
+                    (Some(Token::Keyword(Keyword::An)), Some(Token::Keyword(Keyword::Yr))) => {
+                        total_consumed += 2;
                     }
-                    None => break,
+                    (None, None) => break,
                     _ => return Err(AppError::FunctionParseError),
                 }
             }

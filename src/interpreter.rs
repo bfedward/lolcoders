@@ -121,10 +121,21 @@ impl Interpreter {
                 // this is future lolcode functionality.
             }
             Statement::Visible(exprs, no_new_line) => {
-                let expr_values: Vec<Value> = exprs
+                let mut expr_values: Vec<Value> = exprs
                     .iter()
                     .map(|expr| self.eval_expr(expr))
                     .collect::<Result<Vec<_>, _>>()?;
+
+                if expr_values.len() == 1
+                    && let Some(maybe_noob) = expr_values.first()
+                    && *maybe_noob == Value::Noob
+                {
+                    if let Some(it) = &self.it_variable {
+                        expr_values = vec![it.clone()]
+                    } else {
+                        return Err(AppError::CannotVisibleANoob);
+                    }
+                }
 
                 let yarns: Vec<Yarn> = expr_values.iter().map(|y| y.as_yarn()).collect::<Result<
                     Vec<_>,
@@ -168,47 +179,6 @@ impl Interpreter {
                     .map(|p| self.resolve_identifier_expr(p))
                     .collect::<Result<Vec<Identifier>, AppError>>()?;
                 self.functions.insert(id, (params, body.clone()));
-            }
-            Statement::IIz(func_name, param_values) => {
-                let func_name = self.resolve_identifier_expr(func_name)?;
-                let (func_params, func_statements) = self
-                    .functions
-                    .get(&func_name)
-                    .cloned()
-                    .ok_or_else(|| AppError::FunctionDoesNotExist(func_name.clone()))?;
-
-                let arg_values: Vec<Value> = param_values
-                    .iter()
-                    .map(|expr| self.eval_expr(expr))
-                    .collect::<Result<Vec<_>, _>>()?;
-
-                let mut new_scope = HashMap::new();
-
-                if func_params.len() != arg_values.len() {
-                    return Err(AppError::NotEnoughArgsForFunction);
-                }
-
-                for (param, value) in func_params.into_iter().zip(arg_values) {
-                    new_scope.insert(param, value);
-                }
-
-                self.variables.push(new_scope);
-
-                for stmt in &func_statements {
-                    match stmt {
-                        Statement::Gtfo => {
-                            self.variables.pop();
-                            return Ok(());
-                        }
-                        Statement::FoundYr(_) => {
-                            self.variables.pop();
-                            return Ok(());
-                        }
-                        _ => self.execute_statement(stmt)?,
-                    }
-                }
-
-                self.variables.pop();
             }
             Statement::FoundYr(_) | Statement::Gtfo => {
                 return Err(AppError::CannotReturnFromFunctionOutsideFunction);
@@ -392,7 +362,7 @@ impl Interpreter {
         Ok(())
     }
 
-    fn resolve_identifier_expr(&self, ident: &IdentifierExpr) -> Result<Identifier, AppError> {
+    fn resolve_identifier_expr(&mut self, ident: &IdentifierExpr) -> Result<Identifier, AppError> {
         match ident {
             IdentifierExpr::Identifier(id) => Ok(id.clone()),
 
@@ -497,7 +467,7 @@ impl Interpreter {
         Ok((Value::Yarn(Yarn::new(ch.to_string())), j + 1))
     }
 
-    fn eval_expr(&self, expr: &Expr) -> Result<Value, AppError> {
+    fn eval_expr(&mut self, expr: &Expr) -> Result<Value, AppError> {
         match expr {
             Expr::Numbar(n) => Ok(Value::Numbar(n.clone())),
             Expr::Numbr(n) => Ok(Value::Numbr(n.clone())),
@@ -519,11 +489,11 @@ impl Interpreter {
             Expr::Maek(expr, cast_type) => {
                 match expr.as_ref() {
                     Expr::Variable(identifier_expr) => {
+                        let identifier = self.resolve_identifier_expr(identifier_expr)?;
+
                         let curr_scope = self
                             .current_scope()
                             .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
-
-                        let identifier = self.resolve_identifier_expr(identifier_expr)?;
 
                         let value = curr_scope.get(&identifier).cloned().unwrap_or(Value::Noob);
 
@@ -583,6 +553,51 @@ impl Interpreter {
                 let mut inner_troof = inner_value.as_troof();
                 inner_troof.flip_value();
                 Ok(Value::Troof(inner_troof))
+            }
+            Expr::FunctionCall(identifier_expr, exprs) => {
+                let func_name = self.resolve_identifier_expr(identifier_expr)?;
+                let (func_params, func_statements) = self
+                    .functions
+                    .get(&func_name)
+                    .cloned()
+                    .ok_or_else(|| AppError::FunctionDoesNotExist(func_name.clone()))?;
+
+                let arg_values: Vec<Value> = exprs
+                    .iter()
+                    .map(|expr| self.eval_expr(expr))
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                let mut new_scope = HashMap::new();
+
+                if func_params.len() != arg_values.len() {
+                    return Err(AppError::NotEnoughArgsForFunction);
+                }
+
+                for (param, value) in func_params.into_iter().zip(arg_values) {
+                    new_scope.insert(param, value);
+                }
+
+                self.variables.push(new_scope);
+
+                let mut value = Value::Noob;
+
+                for stmt in &func_statements {
+                    match stmt {
+                        Statement::Gtfo => {
+                            self.variables.pop();
+                            value = Value::Noob;
+                        }
+                        Statement::FoundYr(expr) => {
+                            self.variables.pop();
+                            value = self.eval_expr(expr)?;
+                        }
+                        _ => self.execute_statement(stmt)?,
+                    }
+                }
+
+                self.variables.pop();
+
+                Ok(value)
             }
         }
     }

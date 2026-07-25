@@ -11,7 +11,6 @@ pub enum Statement {
     Visible(Vec<Expr>, bool),
     IHasA(IdentifierExpr, Expr),
     HowIzI(IdentifierExpr, Vec<IdentifierExpr>, Vec<Statement>),
-    IIz(IdentifierExpr, Vec<Expr>),
     VarRIIzFunc(IdentifierExpr, Identifier, Vec<Expr>),
     FoundYr(Expr),
     Gtfo,
