@@ -402,7 +402,7 @@ impl Expr {
 
         let (left, consumed_left) = Expr::parse(&tokens[consume_from..])?;
 
-        let consumed_an = match tokens.get(2 + consumed_left) {
+        let consumed_an = match tokens.get(consume_from + consumed_left) {
             Some(Token::Keyword(Keyword::An)) => 1,
             _ => 0,
         };
@@ -416,7 +416,7 @@ impl Expr {
                 left: Box::new(left),
                 right: Box::new(right),
             },
-            consume_from + 1 + consumed_left + consumed_right,
+            consume_from + consumed_left + consumed_an + consumed_right,
         ))
     }
 }

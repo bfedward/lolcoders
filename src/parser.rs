@@ -325,7 +325,7 @@ pub fn parse_line(
                 if tokens.len() != is_pos + 4 {
                     return Err(AppError::BadConversionStatement);
                 }
-                
+
                 let id = &tokens[..is_pos];
 
                 let (ident_expr, consumed) = IdentifierExpr::parse(id)?;
@@ -346,10 +346,7 @@ pub fn parse_line(
                     None => return Err(AppError::BadCastType),
                 };
 
-                return Ok(Some(Statement::Expr(Expr::Maek(
-                    Box::from(Expr::Variable(ident_expr)),
-                    cast_type,
-                ))));
+                return Ok(Some(Statement::Recast(ident_expr, cast_type)));
             }
 
             // a line of lolcode may just be an expression.

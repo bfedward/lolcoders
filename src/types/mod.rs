@@ -31,14 +31,14 @@ impl Value {
             Value::Numbar(n) => Ok(Number::from(n)),
 
             Value::Yarn(y) => {
-                let float: Result<Numbar, AppError> = y.clone().try_into();
-                if let Ok(float) = float {
-                    return Ok(Number::from(&float));
-                }
-
                 let int: Result<Numbr, AppError> = y.clone().try_into();
                 if let Ok(int) = int {
                     return Ok(Number::from(&int));
+                }
+
+                let float: Result<Numbar, AppError> = y.clone().try_into();
+                if let Ok(float) = float {
+                    return Ok(Number::from(&float));
                 }
 
                 Err(AppError::YarnIsNotANumber(y.clone()))
@@ -82,6 +82,7 @@ impl PartialEq for Value {
             (Value::Numbr(x), Value::Numbar(y)) => x == y,
             (Value::Yarn(x), Value::Yarn(y)) => x == y,
             (Value::Troof(x), Value::Troof(y)) => x == y,
+            (Value::Noob, Value::Noob) => true,
             _ => false,
         }
     }
@@ -130,9 +131,7 @@ pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Valu
             match (l, r) {
                 (Number::Int(_), Number::Int(0)) => Err(AppError::DivisionByZero),
 
-                (Number::Int(a), Number::Int(b)) => Ok(Value::Numbar(Numbar::new(
-                    BigDecimal::from(a) / BigDecimal::from(b),
-                ))),
+                (Number::Int(a), Number::Int(b)) => Ok(Value::Numbr(Numbr::new(a / b))),
 
                 (Number::Int(a), Number::Decimal(b)) => {
                     Ok(Value::Numbar(Numbar::new(a as f64 / b)))

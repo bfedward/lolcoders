@@ -72,8 +72,18 @@ impl TryFrom<Yarn> for Numbar {
     type Error = AppError;
 
     fn try_from(value: Yarn) -> Result<Self, Self::Error> {
-        let num = BigDecimal::from_str(value.value.as_str())
-            .map_err(|_| AppError::YarnIsNotANumbar(value))?;
+        let digits = value.value.trim_start();
+        let mut numeric = String::new();
+
+        for c in digits.chars() {
+            if c.is_ascii_digit() || c == '.' {
+                numeric.push(c);
+            } else {
+                break; // parsing stops at the first non-digit, so "123x" parses to 123
+            }
+        }
+
+        let num = BigDecimal::from_str(&numeric).map_err(|_| AppError::YarnIsNotANumbar(value))?;
 
         Ok(Numbar::new(num))
     }
@@ -274,6 +284,10 @@ impl From<Yarn> for Troof {
 fn parse_numbr_prefix(input: &str) -> Result<i64, AppError> {
     let input = input.trim_start();
 
+    if input.contains('.') {
+        return Err(AppError::YarnIsNotANumbr(Yarn::new(input.to_owned())));
+    }
+
     let (radix, digits) = {
         if input.starts_with("0x") || input.starts_with("0X") {
             (16, &input[2..])
@@ -290,7 +304,7 @@ fn parse_numbr_prefix(input: &str) -> Result<i64, AppError> {
         if c.is_digit(radix) {
             numeric.push(c);
         } else {
-            break;
+            break; // parsing stops at the first non-digit, so "123x" parses to 123
         }
     }
 

@@ -1,7 +1,7 @@
 use bigdecimal::BigDecimal;
 
 use crate::{
-    expression::Expr,
+    expression::{CastTypes, Expr},
     types::identifier::{Identifier, IdentifierExpr},
 };
 
@@ -19,6 +19,7 @@ pub enum Statement {
     CanHasLib(IdentifierExpr),
     Gimmeh(IdentifierExpr),
     Rassignment(IdentifierExpr, Expr),
+    Recast(IdentifierExpr, CastTypes),
     Expr(Expr),
     ORly(ORlyBlock),
 }

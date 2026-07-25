@@ -258,6 +258,33 @@ impl Interpreter {
                     .entry(identifier.clone())
                     .and_modify(|e| *e = value);
             }
+            Statement::Recast(id, cast_type) => {
+                let identifier = self.resolve_identifier_expr(id)?;
+
+                let curr_scope_mut = self
+                    .current_scope_mut()
+                    .ok_or(AppError::CouldNotGetCurrentVariableScope)?;
+
+                let value = curr_scope_mut
+                    .get(&identifier)
+                    .ok_or(AppError::VariableDoesNotExist(identifier.clone()))?;
+
+                let casted = if matches!(value, Value::Noob) {
+                    match cast_type {
+                        CastTypes::Troof => Value::Troof(Troof::default()),
+                        CastTypes::Yarn => Value::Yarn(Yarn::default()),
+                        CastTypes::Numbr => Value::Numbr(Numbr::default()),
+                        CastTypes::Numbar => Value::Numbar(Numbar::default()),
+                        CastTypes::Noob => Value::Noob,
+                    }
+                } else {
+                    Self::cast_value(value, cast_type)?
+                };
+
+                curr_scope_mut
+                    .entry(identifier.clone())
+                    .and_modify(|e| *e = casted);
+            }
             Statement::VarRIIzFunc(var_name, func_name, param_values) => {
                 let var_id = self.resolve_identifier_expr(var_name)?;
 
@@ -580,7 +607,7 @@ impl Interpreter {
                 Value::Numbr(casted_number)
             }
             CastTypes::Numbar => {
-                let number = value.as_number()?;
+                let number = value.as_number().unwrap_or_default();
 
                 let casted_number = match number {
                     Number::Int(int) => Numbar::new(int.into()),
