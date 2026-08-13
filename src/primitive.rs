@@ -4,7 +4,7 @@ use std::str::FromStr;
 use bigdecimal::{BigDecimal, Zero};
 
 use crate::app_error::AppError;
-use crate::types::Value;
+use crate::value::Value;
 
 // This is used for internal logic of maths operations. When parsing a yarn, we want to check if it
 // contains a Numbar first and a Numbr second. So this Number enum holds both possibilies and allows

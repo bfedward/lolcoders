@@ -4,11 +4,9 @@ use bigdecimal::BigDecimal;
 
 use crate::{
     app_error::AppError,
+    identifier::Identifier,
     keywords::Keyword,
-    types::{
-        identifier::Identifier,
-        primitive::{Numbar, Numbr, Troof, Yarn},
-    },
+    primitive::{Numbar, Numbr, Troof, Yarn},
 };
 
 #[derive(Debug, Clone, PartialEq)]

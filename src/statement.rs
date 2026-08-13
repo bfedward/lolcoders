@@ -2,10 +2,8 @@ use bigdecimal::BigDecimal;
 
 use crate::{
     expression::{CastTypes, Expr},
-    types::{
-        Value,
-        identifier::{Identifier, IdentifierExpr},
-    },
+    identifier::{Identifier, IdentifierExpr},
+    value::Value,
 };
 
 #[derive(Debug, PartialEq, Clone)]

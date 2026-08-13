@@ -1,14 +1,12 @@
 use crate::{
     app_error::AppError,
     expression::{CastTypes, Expr},
+    identifier::IdentifierExpr,
     keywords::Keyword::{self},
     lexer::{Token, Tokens, tokenize_line},
+    primitive::{Numbar, Numbr, Troof, Yarn},
     statement::{MebbeBlock, ORlyBlock, OmgBlock, Statement, WtfBlock},
-    types::{
-        Value,
-        identifier::IdentifierExpr,
-        primitive::{Numbar, Numbr, Troof, Yarn},
-    },
+    value::Value,
 };
 use std::iter::Peekable;
 

@@ -1,11 +1,9 @@
 use crate::{
     app_error::AppError,
+    identifier::IdentifierExpr,
     keywords::Keyword,
     lexer::{Token, Tokens},
-    types::{
-        identifier::IdentifierExpr,
-        primitive::{Numbar, Numbr, Troof, Yarn},
-    },
+    primitive::{Numbar, Numbr, Troof, Yarn},
 };
 
 #[derive(Debug, Clone, PartialEq)]

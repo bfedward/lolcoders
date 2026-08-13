@@ -1,16 +1,19 @@
-use bigdecimal::ToPrimitive;
+use bigdecimal::{BigDecimal, ToPrimitive};
 
-use crate::expression::{CastTypes, Expr};
+use crate::expression::{BoolOp, CastTypes, ComparisonExpr, ComparisonOp, Expr, MathOp, MathsExpr};
 use crate::lexer::{normalise_source, tokenize_line};
 use crate::parser::parse_line;
 
+use crate::identifier::{Identifier, IdentifierExpr};
+use crate::primitive::{Numbar, Number, Numbr, Troof, Yarn};
 use crate::statement::Statement;
-use crate::types::identifier::{Identifier, IdentifierExpr};
-use crate::types::primitive::{Numbar, Number, Numbr, Troof, Yarn};
-use crate::types::{eval_bool_expr, eval_comparison_expr, eval_maths_expr};
-use crate::{app_error::AppError, types::Value};
+use crate::{app_error::AppError, value::Value};
 use std::collections::HashMap;
 use std::io::{Write, stdin, stdout};
+
+use std::ops::{Add, Mul, Sub};
+
+use bigdecimal::Zero;
 
 pub struct Interpreter {
     it_variable: Option<Value>,
@@ -675,4 +678,159 @@ impl Interpreter {
             .rev() // check the local scope, then the previous scopes.
             .find_map(|scope| scope.get(name))
     }
+}
+
+pub fn eval_comparison_expr(
+    op: &ComparisonExpr,
+    left: Value,
+    right: Value,
+) -> Result<Value, AppError> {
+    let comp = match op.op {
+        ComparisonOp::BothSaem => left == right,
+        ComparisonOp::Diffrint => left != right,
+    };
+
+    Ok(Value::Troof(Troof::new(comp)))
+}
+
+pub fn eval_maths_expr(op: &MathsExpr, left: Value, right: Value) -> Result<Value, AppError> {
+    match op.op {
+        MathOp::Sum => apply_numeric_op(left, right, i64::checked_add, BigDecimal::add),
+
+        MathOp::Diff => apply_numeric_op(left, right, i64::checked_sub, BigDecimal::sub),
+
+        MathOp::Produkt => apply_numeric_op(left, right, i64::checked_mul, BigDecimal::mul),
+        MathOp::Quoshunt => {
+            let l = left.as_number()?;
+            let r = right.as_number()?;
+
+            if check_zero(&r) {
+                return Err(AppError::DivisionByZero);
+            }
+
+            match (l, r) {
+                (Number::Int(_), Number::Int(0)) => Err(AppError::DivisionByZero),
+
+                (Number::Int(a), Number::Int(b)) => Ok(Value::Numbr(Numbr::new(a / b))),
+
+                (Number::Int(a), Number::Decimal(b)) => {
+                    Ok(Value::Numbar(Numbar::new(a as f64 / b)))
+                }
+
+                (Number::Decimal(a), Number::Int(b)) => {
+                    Ok(Value::Numbar(Numbar::new(a / b as f64)))
+                }
+
+                (Number::Decimal(a), Number::Decimal(b)) => Ok(Value::Numbar(Numbar::new(a / b))),
+            }
+        }
+
+        MathOp::Mod => apply_numeric_op(left, right, |a, b| Some(a % b), |a, b| a % b),
+
+        MathOp::Biggr => apply_numeric_op(left, right, |a, b| Some(a.max(b)), BigDecimal::max),
+
+        MathOp::Smallr => apply_numeric_op(left, right, |a, b| Some(a.min(b)), BigDecimal::min),
+    }
+}
+
+fn apply_numeric_op<X, Y>(
+    left: Value,
+    right: Value,
+    int_op: X,
+    float_op: Y,
+) -> Result<Value, AppError>
+where
+    X: Fn(i64, i64) -> Option<i64>,
+    Y: Fn(BigDecimal, BigDecimal) -> BigDecimal,
+{
+    let l = left.as_number()?;
+    let r = right.as_number()?;
+
+    let result = match (l, r) {
+        (Number::Int(a), Number::Int(b)) => {
+            let res = int_op(a, b).ok_or(AppError::NumberOverflow)?;
+            Number::Int(res)
+        }
+
+        (Number::Int(a), Number::Decimal(b)) => Number::Decimal(float_op(a.into(), b)),
+
+        (Number::Decimal(a), Number::Int(b)) => Number::Decimal(float_op(a, b.into())),
+
+        (Number::Decimal(a), Number::Decimal(b)) => Number::Decimal(float_op(a, b)),
+    };
+
+    Ok(result.into_value())
+}
+
+fn check_zero(n: &Number) -> bool {
+    match n {
+        Number::Int(0) => true,
+        Number::Decimal(f) => *f == BigDecimal::zero(),
+        _ => false,
+    }
+}
+
+pub fn eval_bool_expr(op: &BoolOp, exprs: Vec<Value>) -> Result<Value, AppError> {
+    let expr_count = exprs.len();
+
+    match op {
+        BoolOp::Both | BoolOp::Either | BoolOp::Won => {
+            if expr_count != 2 {
+                return Err(AppError::TroofExpressionHasInvalidNumberOfArguments);
+            }
+        }
+        BoolOp::Not => {
+            if expr_count != 1 {
+                return Err(AppError::TroofExpressionHasInvalidNumberOfArguments);
+            }
+        }
+        BoolOp::All | BoolOp::Any => {
+            if expr_count == 0 {
+                return Err(AppError::TroofExpressionHasInvalidNumberOfArguments);
+            }
+        }
+    }
+
+    let res = match op {
+        BoolOp::Both | BoolOp::All => {
+            if exprs.iter().all(|t| t.as_troof().value()) {
+                Troof::new(true)
+            } else {
+                Troof::new(false)
+            }
+        }
+        BoolOp::Any => {
+            if exprs.iter().any(|t| t.as_troof().value()) {
+                Troof::new(true)
+            } else {
+                Troof::new(false)
+            }
+        }
+        BoolOp::Either => {
+            if exprs.iter().any(|t| t.as_troof().value()) {
+                Troof::new(true)
+            } else {
+                Troof::new(false)
+            }
+        }
+        BoolOp::Won => {
+            let how_many = exprs.iter().fold(0, |mut acc, x| {
+                if x.as_troof().value() {
+                    acc += 1;
+                }
+                acc
+            });
+
+            Troof::new(how_many == 1)
+        }
+        BoolOp::Not => {
+            if exprs.iter().all(|t| t.as_troof().value()) {
+                Troof::new(false)
+            } else {
+                Troof::new(true)
+            }
+        }
+    };
+
+    Ok(Value::Troof(res))
 }

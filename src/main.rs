@@ -1,11 +1,13 @@
 mod app_error;
 mod expression;
+mod identifier;
 mod interpreter;
 mod keywords;
 mod lexer;
 mod parser;
+mod primitive;
 mod statement;
-mod types;
+mod value;
 
 use interpreter::Interpreter;
 use std::{env, fs, path::Path};

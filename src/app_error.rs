@@ -1,8 +1,10 @@
 use std::fmt::{self};
 
 use crate::{
+    identifier::Identifier,
     lexer::{Token, Tokens},
-    types::{Value, identifier::Identifier, primitive::Yarn},
+    primitive::Yarn,
+    value::Value,
 };
 
 pub enum AppError {
