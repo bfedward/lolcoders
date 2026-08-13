@@ -8,6 +8,7 @@ use bigdecimal::{BigDecimal, Zero};
 use crate::{
     app_error::AppError,
     expression::{BoolOp, ComparisonExpr, ComparisonOp, MathOp, MathsExpr},
+    lexer::{Token, Tokens},
     types::primitive::{Numbar, Number, Numbr, Troof, Yarn},
 };
 
@@ -24,6 +25,19 @@ pub enum Value {
 }
 
 impl Value {
+    pub fn parse(tokens: &[Token]) -> Result<(Self, usize), AppError> {
+        match tokens.first() {
+            Some(value) => match value {
+                Token::Yarn(yarn) => Ok((Value::Yarn(yarn.clone()), 1)),
+                Token::Numbar(numbar) => Ok((Value::Numbar(numbar.clone()), 1)),
+                Token::Numbr(numbr) => Ok((Value::Numbr(numbr.clone()), 1)),
+                Token::Troof(troof) => Ok((Value::Troof(troof.clone()), 1)),
+                _ => Err(AppError::TokenCannotBeValue(value.clone())),
+            },
+            None => Err(AppError::MissingValue(Tokens(tokens.to_vec()))),
+        }
+    }
+
     pub fn as_number(&self) -> Result<Number, AppError> {
         match self {
             Value::Numbr(n) => Ok(Number::from(n)),
@@ -69,6 +83,17 @@ impl Value {
             Value::Yarn(yarn) => Ok(yarn.clone()),
             Value::Troof(_) => Err(AppError::CannotVisibleATroof),
             Value::Noob => Err(AppError::CannotVisibleANoob),
+        }
+    }
+
+    pub fn strict_eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Value::Numbar(x), Value::Numbar(y)) => x == y,
+            (Value::Numbr(x), Value::Numbr(y)) => x == y,
+            (Value::Yarn(x), Value::Yarn(y)) => x == y,
+            (Value::Troof(x), Value::Troof(y)) => x == y,
+            (Value::Noob, Value::Noob) => true,
+            _ => false,
         }
     }
 }

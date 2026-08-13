@@ -8,7 +8,7 @@ use std::process::Stdio;
 // To run multiple groups: LCR_GROUPS=3-Types,10-Loops cargo test
 
 // With passes: LCR_GROUPS=2-Comments LCR_VERBOSE=1 cargo test -- --nocapture
-// LCR_GROUPS=1-Structure,2-Comments,3-Types,4-Output,5-Input,6-Variables,7-Operators,8-Conditionals LCR_VERBOSE=1 cargo test -- --nocapture
+// lolcoders % LCR_GROUPS=0-Benchmarks,1-Structure,2-Comments,3-Types,4-Output,5-Input,6-Variables,7-Operators,8-Conditionals,9-Functions,10-Loops,11-Unicode,12-Arrays LCR_VERBOSE=1 cargo test -- --nocapture
 
 struct TestResult {
     path: String,

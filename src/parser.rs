@@ -1,10 +1,11 @@
 use crate::{
     app_error::AppError,
     expression::{CastTypes, Expr},
-    keywords::Keyword,
+    keywords::Keyword::{self},
     lexer::{Token, Tokens, tokenize_line},
-    statement::{MebbeBlock, ORlyBlock, Statement},
+    statement::{MebbeBlock, ORlyBlock, OmgBlock, Statement, WtfBlock},
     types::{
+        Value,
         identifier::IdentifierExpr,
         primitive::{Numbar, Numbr, Troof, Yarn},
     },
@@ -228,6 +229,11 @@ pub fn parse_line(
         ] => {
             let o_rly_block = parse_o_rly_block(tokens, lines)?;
             Ok(Some(Statement::ORly(o_rly_block)))
+        }
+
+        [Token::Keyword(Keyword::Wtf), Token::QuestionMark] => {
+            let wtf_block = parse_wtf_block(tokens, lines)?;
+            Ok(Some(Statement::Wtf(wtf_block)))
         }
 
         [Token::Keyword(Keyword::KThxBye)] => Ok(Some(Statement::KThxBye)),
@@ -503,4 +509,140 @@ fn parse_o_rly_sub_block(
     }
 
     Err(AppError::ORlyBlockMustEndOic)
+}
+
+pub fn parse_wtf_block(
+    tokens: &[Token],
+    lines: &mut Peekable<std::str::Lines>,
+) -> Result<WtfBlock, AppError> {
+    let mut wtf_block = WtfBlock::default();
+    let mut seen_conditions = Vec::new();
+
+    match tokens {
+        [Token::Keyword(Keyword::Wtf), Token::QuestionMark] => (),
+        _ => return Err(AppError::WtfParseError),
+    }
+
+    let line = lines.next().ok_or(AppError::WtfBlockMustHaveOmg)?;
+    let tokens = tokenize_line(line)?;
+
+    let condition = match tokens.as_slice() {
+        [Token::Keyword(Keyword::Omg), rest @ ..] => {
+            let (condition, consumed) = Value::parse(rest)?;
+            if consumed != rest.len() {
+                return Err(AppError::WtfParseError);
+            }
+            condition
+        }
+        _ => return Err(AppError::WtfBlockMustHaveOmg),
+    };
+    seen_conditions.push(condition.clone());
+
+    let (statements, has_gtfo, mut boundary) = parse_omg_block(lines)?;
+    wtf_block.omg_blocks.push(OmgBlock {
+        condition,
+        statements,
+        has_gtfo,
+    });
+
+    while let OmgBoundary::Omg(condition) = boundary {
+        for cond in seen_conditions.iter() {
+            if cond.strict_eq(&condition) {
+                return Err(AppError::DuplicateOmgCondition(condition));
+            }
+        }
+
+        seen_conditions.push(condition.clone());
+
+        let (statements, has_gtfo, next_boundary) = parse_omg_block(lines)?;
+        wtf_block.omg_blocks.push(OmgBlock {
+            condition,
+            statements,
+            has_gtfo,
+        });
+        boundary = next_boundary;
+    }
+
+    match boundary {
+        OmgBoundary::Omgwtf => {
+            let (statements, has_gtfo, next_boundary) = parse_omg_block(lines)?;
+
+            if has_gtfo {
+                return Err(AppError::InvalidUseOfGtfoInWtfBlock);
+            }
+
+            if next_boundary != OmgBoundary::Oic {
+                return Err(AppError::WtfBlockMustEndOic);
+            }
+
+            wtf_block.omgwtf_block = statements;
+        }
+        OmgBoundary::Oic => {
+            // If we get here, WTF block has no OMGWTF block, which are optional.
+        }
+        _ => return Err(AppError::WtfParseError),
+    }
+
+    Ok(wtf_block)
+}
+
+#[derive(PartialEq)]
+enum OmgBoundary {
+    Omg(Value),
+    Omgwtf,
+    Oic,
+}
+
+fn parse_omg_block(
+    lines: &mut Peekable<std::str::Lines>,
+) -> Result<(Vec<Statement>, bool, OmgBoundary), AppError> {
+    let mut statements = Vec::new();
+    let mut has_gtfo = false;
+
+    while let Some(line) = lines.peek() {
+        let tokens = tokenize_line(line)?;
+
+        match tokens.as_slice() {
+            [Token::Keyword(Keyword::Omg), rest @ ..] => {
+                let (value, consumed) = Value::parse(rest)?;
+                if consumed != rest.len() {
+                    return Err(AppError::WtfParseError);
+                }
+                lines.next();
+                return Ok((statements, has_gtfo, OmgBoundary::Omg(value)));
+            }
+            [Token::Keyword(Keyword::Omgwtf)] => {
+                lines.next();
+                return Ok((statements, has_gtfo, OmgBoundary::Omgwtf));
+            }
+            [Token::Keyword(Keyword::Oic)] => {
+                lines.next();
+                return Ok((statements, has_gtfo, OmgBoundary::Oic));
+            }
+            [Token::Keyword(Keyword::Gtfo)] => {
+                if has_gtfo {
+                    return Err(AppError::InvalidUseOfGtfoInWtfBlock);
+                }
+                lines.next();
+                has_gtfo = true;
+            }
+            _ => {
+                if has_gtfo {
+                    return Err(AppError::InvalidUseOfGtfoInWtfBlock);
+                }
+                let line = lines.next().ok_or(AppError::WtfParseError)?;
+                let tokens = tokenize_line(line)?;
+
+                if let Some(stmt) = parse_line(&tokens, lines)? {
+                    statements.push(stmt);
+                }
+            }
+        }
+    }
+
+    if statements.is_empty() {
+        return Err(AppError::WtfBlockMustHaveOmg);
+    }
+
+    Err(AppError::WtfBlockMustEndOic)
 }

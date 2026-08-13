@@ -2,7 +2,7 @@ use std::fmt::{self};
 
 use crate::{
     lexer::{Token, Tokens},
-    types::{identifier::Identifier, primitive::Yarn},
+    types::{Value, identifier::Identifier, primitive::Yarn},
 };
 
 pub enum AppError {
@@ -16,6 +16,8 @@ pub enum AppError {
     InvalidIdentifierExpr(Tokens),
     TokenCannotBeExpression(Token),
     MissingExpression(Tokens),
+    TokenCannotBeValue(Token),
+    MissingValue(Tokens),
     CouldNotGetCurrentVariableScope,
     CannotReturnFromFunctionOutsideFunction,
     FunctionMustEndIfUSaySo,
@@ -48,6 +50,11 @@ pub enum AppError {
     ORlyBlockMustEndOic,
     ORlyBlockCanOnlyHaveOneNoWai,
     ORlyNoWaiBlockMustBeLast,
+    WtfParseError,
+    WtfBlockMustHaveOmg,
+    WtfBlockMustEndOic,
+    InvalidUseOfGtfoInWtfBlock,
+    DuplicateOmgCondition(Value),
     CanHasMustEndQuestionMark,
     UnexpectedEOF,
     InvalidSyntax(Tokens),
@@ -81,8 +88,14 @@ impl fmt::Display for AppError {
             AppError::TokenCannotBeExpression(token) => {
                 write!(f, "Token {token} cannot be expression")
             }
+            AppError::TokenCannotBeValue(token) => {
+                write!(f, "Token {token} cannot be value")
+            }
             AppError::MissingExpression(tokens) => {
                 write!(f, "Missing expression: {tokens}")
+            }
+            AppError::MissingValue(tokens) => {
+                write!(f, "Missing value: {tokens}")
             }
             AppError::CouldNotGetCurrentVariableScope => {
                 write!(f, "Could not get current variable scope")
@@ -203,6 +216,21 @@ impl fmt::Display for AppError {
             }
             AppError::BadConversionStatement => {
                 write!(f, "Bad conversion statement")
+            }
+            AppError::WtfParseError => {
+                write!(f, "WTF parse error")
+            }
+            AppError::WtfBlockMustHaveOmg => {
+                write!(f, "WTF block must have OMG block")
+            }
+            AppError::WtfBlockMustEndOic => {
+                write!(f, "WTF block must end OIC")
+            }
+            AppError::InvalidUseOfGtfoInWtfBlock => {
+                write!(f, "Invalid use of GTFO in WTF block")
+            }
+            AppError::DuplicateOmgCondition(value) => {
+                write!(f, "Duplicate OMG condition: {value}")
             }
         }
     }

@@ -358,6 +358,38 @@ impl Interpreter {
                     self.execute_statement(stmt)?;
                 }
             }
+            Statement::Wtf(wtf_block) => {
+                let it_val = self
+                    .it_variable
+                    .as_ref()
+                    .ok_or(AppError::NoValueInItVariable)?
+                    .clone();
+
+                let mut has_run_an_omg = false;
+                let mut falling_through = false;
+
+                for omg in &wtf_block.omg_blocks {
+                    if it_val.strict_eq(&omg.condition) || falling_through {
+                        has_run_an_omg = true;
+
+                        for stmt in &omg.statements {
+                            self.execute_statement(stmt)?;
+                        }
+
+                        if omg.has_gtfo {
+                            break;
+                        } else {
+                            falling_through = true;
+                        }
+                    }
+                }
+
+                if !has_run_an_omg {
+                    for stmt in &wtf_block.omgwtf_block {
+                        self.execute_statement(stmt)?;
+                    }
+                }
+            }
         }
         Ok(())
     }
